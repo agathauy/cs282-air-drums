@@ -1,13 +1,12 @@
-
-
 import cv2
 import numpy as np
-#the [x, y] for each right-click event will be stored here
+import time
 
-
-
-# path_image = '../data/blue_foil.png'
-path_image = '../data/blue_640.png'
+# Path of image to import
+#path_image = '../data/blue_foil.png'
+path_image = '../data/green_blob.png'
+#img = NULL
+#img_lab= NULL
 img = cv2.imread(path_image)
 img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 
@@ -15,7 +14,12 @@ img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 # Get 10x10 patch from center
 patch_size = 10
 patch_total_size = patch_size*patch_size
-patch_values = []
+
+
+min_rgb = np.array([0, 0, 0])
+max_rgb = np.array([0, 0, 0])
+#descriptor = []
+CALIBRATED = False
 
 def mouse_callback(event, x, y, flags, params):
 
@@ -50,13 +54,6 @@ def mouse_callback(event, x, y, flags, params):
         descriptor = np.array(descriptor)
         print(descriptor)
 
-
-
-        # list_distances.sort(key=takeDistance)
-        # print(list_distances[0:5])
-        # print(len(list_distances))
-        # list_distances = np.array(list_distances)
-
         print(descriptor[:, 0])
         line = "min: {}, max: {}, mean: {}".format(np.min(descriptor[:, 0]), np.max(descriptor[:, 0]), np.mean(descriptor[:, 0]))
         print(line)
@@ -64,6 +61,8 @@ def mouse_callback(event, x, y, flags, params):
         list_l = np.sort(list_l, axis=None)
         #print(list_l[0:5])
         line = "min: {}, max: {}, mean: {}".format(np.min(list_l[patch_size:patch_total_size-patch_size]), np.max(list_l[patch_size:patch_total_size-patch_size]), np.mean(list_l[patch_size:patch_total_size-patch_size]))
+        min_rgb[0] = np.min(list_l[patch_size:patch_total_size-patch_size])
+        max_rgb[0] = np.max(list_l[patch_size:patch_total_size-patch_size])
         print(line)
 
 
@@ -73,7 +72,8 @@ def mouse_callback(event, x, y, flags, params):
         list_a = descriptor[:,1]
         list_a = np.sort(list_a, axis=None)
         line = "min: {}, max: {}, mean: {}".format(np.min(list_a[patch_size:patch_total_size-patch_size]), np.max(list_a[patch_size:patch_total_size-patch_size]), np.mean(list_a[patch_size:patch_total_size-patch_size]))
-
+        min_rgb[1] = np.min(list_a[patch_size:patch_total_size-patch_size])
+        max_rgb[1] = np.max(list_a[patch_size:patch_total_size-patch_size])
         print(line)
 
         print(descriptor[:, 2])
@@ -82,21 +82,83 @@ def mouse_callback(event, x, y, flags, params):
         list_b = descriptor[:,2]
         list_b = np.sort(list_b, axis=None)
         line = "min: {}, max: {}, mean: {}".format(np.min(list_b[patch_size:patch_total_size-patch_size]), np.max(list_b[patch_size:patch_total_size-patch_size]), np.mean(list_b[patch_size:patch_total_size-patch_size]))
+        min_rgb[2] = np.min(list_b[patch_size:patch_total_size-patch_size])
+        max_rgb[2] = np.max(list_b[patch_size:patch_total_size-patch_size])
         print(line)
 
+        cv2.imshow('Patch 100', descriptor)
+
+
+if __name__ == '__main__':
+
+    while True:
+        cv2.namedWindow('Calibrate Picture', cv2.WINDOW_NORMAL)
+
+        #set mouse callback function for window
+        cv2.setMouseCallback('Calibrate Picture', mouse_callback)
+
+        cv2.imshow('Calibrate Picture', img)
+        if CALIBRATED == True:
+            break
+        if cv2.waitKey(1) == 27: 
+            break  # esc to quit
+
+    cv2.destroyAllWindows()
+    print(min_rgb)
+    print(max_rgb)
+
+
+    # Start the blob detection
+    while True:
+
+        # For calibration
+        cv2.namedWindow('AirDrums', cv2.WINDOW_NORMAL)
+        #set mouse callback function for window
+        cv2.imshow('AirDrums', img)
+
+        # Do the blob detection
+        start = time.time()
+
+        #img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        img_lab = img
+
+        # minLAB = np.array([lab[0] - thresh, lab[1] - thresh, lab[2] - thresh])
+        # maxLAB = np.array([lab[0] + thresh, lab[1] + thresh, lab[2] + thresh])
+
+        # minLAB = np.array([100, 127, 105])
+        # maxLAB = np.array([200, 130, 124])
+
+
+        # raw
+        # minLAB = np.array([125, 96, 72])
+        # maxLAB = np.array([255, 244, 221])
+
+        # With lowest 10 and top 10 samples cut off
+
+        maskLAB = cv2.inRange(img_lab, min_rgb, max_rgb)
+        #print(maskLAB)
+        resultLAB = cv2.bitwise_and(img_lab, img_lab, mask = maskLAB)
+
+
+
+        kernel = np.ones((10,10),np.uint8)
+        #erosion = cv2.erode(maskLAB,kernel,iterations = 1)
+        dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
+
+
+        #cv2.imshow("Output LAB", resultLAB)
+        #cv2.imshow("erosion", erosion)
+        end = time.time()
+        cv2.imshow("AirDrums: dilation", dilation)
+
+        print("Seconds elapsed: {}".format(end-start))
+
+        if cv2.waitKey(1) == 27: 
+            break  # esc to quit
+
+    cv2.destroyAllWindows()
 
 
 
 
-
-
-
-cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-
-#set mouse callback function for window
-cv2.setMouseCallback('image', mouse_callback)
-
-cv2.imshow('image', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 

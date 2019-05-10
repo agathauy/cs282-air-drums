@@ -1,23 +1,10 @@
-
-
 import cv2
 import numpy as np
-#the [x, y] for each right-click event will be stored here
+import time
 
 
 
-# path_image = '../data/blue_foil.png'
-path_image = '../data/blue_640.png'
-img = cv2.imread(path_image)
-img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
-
-# Get 10x10 patch from center
-patch_size = 10
-patch_total_size = patch_size*patch_size
-patch_values = []
-
-def mouse_callback(event, x, y, flags, params):
+def mouse_callback_calibrate(event, x, y, flags, params):
 
     if event == cv2.EVENT_LBUTTONDOWN:
         point = (x, y)
@@ -40,7 +27,7 @@ def mouse_callback(event, x, y, flags, params):
             return
 
         # Get descriptor
-        descriptor = []
+        #descriptor = []
         # Going through rows
         for m in range(top_left[0], bottom_right[0] + 1):
             # Going through columns
@@ -50,13 +37,6 @@ def mouse_callback(event, x, y, flags, params):
         descriptor = np.array(descriptor)
         print(descriptor)
 
-
-
-        # list_distances.sort(key=takeDistance)
-        # print(list_distances[0:5])
-        # print(len(list_distances))
-        # list_distances = np.array(list_distances)
-
         print(descriptor[:, 0])
         line = "min: {}, max: {}, mean: {}".format(np.min(descriptor[:, 0]), np.max(descriptor[:, 0]), np.mean(descriptor[:, 0]))
         print(line)
@@ -64,6 +44,8 @@ def mouse_callback(event, x, y, flags, params):
         list_l = np.sort(list_l, axis=None)
         #print(list_l[0:5])
         line = "min: {}, max: {}, mean: {}".format(np.min(list_l[patch_size:patch_total_size-patch_size]), np.max(list_l[patch_size:patch_total_size-patch_size]), np.mean(list_l[patch_size:patch_total_size-patch_size]))
+        min_rgb[0] = np.min(list_l[patch_size:patch_total_size-patch_size])
+        max_rgb[0] = np.max(list_l[patch_size:patch_total_size-patch_size])
         print(line)
 
 
@@ -73,7 +55,8 @@ def mouse_callback(event, x, y, flags, params):
         list_a = descriptor[:,1]
         list_a = np.sort(list_a, axis=None)
         line = "min: {}, max: {}, mean: {}".format(np.min(list_a[patch_size:patch_total_size-patch_size]), np.max(list_a[patch_size:patch_total_size-patch_size]), np.mean(list_a[patch_size:patch_total_size-patch_size]))
-
+        min_rgb[1] = np.min(list_a[patch_size:patch_total_size-patch_size])
+        max_rgb[1] = np.max(list_a[patch_size:patch_total_size-patch_size])
         print(line)
 
         print(descriptor[:, 2])
@@ -82,21 +65,23 @@ def mouse_callback(event, x, y, flags, params):
         list_b = descriptor[:,2]
         list_b = np.sort(list_b, axis=None)
         line = "min: {}, max: {}, mean: {}".format(np.min(list_b[patch_size:patch_total_size-patch_size]), np.max(list_b[patch_size:patch_total_size-patch_size]), np.mean(list_b[patch_size:patch_total_size-patch_size]))
+        min_rgb[2] = np.min(list_b[patch_size:patch_total_size-patch_size])
+        max_rgb[2] = np.max(list_b[patch_size:patch_total_size-patch_size])
         print(line)
 
 
 
+class AirDrums(object):
+    def __init__(self):
 
+        # Patch sizes
+        # Get 10x10 patch from center
+        self.patch_size = 10
+        self.patch_total_size = self.patch_size*self.patch_size
+        self.descriptors = []
 
+        # RGB Calibration
+        self.min_rgb = np.array([0, 0, 0])
+        self.max_rgb = np.array([0, 0, 0])
 
-
-
-cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-
-#set mouse callback function for window
-cv2.setMouseCallback('image', mouse_callback)
-
-cv2.imshow('image', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
