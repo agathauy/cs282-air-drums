@@ -42,9 +42,13 @@ while True:
     if point_selected is True:
         cv2.circle(frame, point, 5, (0, 0, 255), 2)
         new_points, status, error = cv2.calcOpticalFlowPyrLK(old_gray, gray_frame, old_points, None, **lk_params)
-        dist = np.linalg.norm(new_points-old_points)
-        velocity = dist/(1/FPS)
-        print('Velocity: %.2f pixels/second'%velocity)
+        dt = 1/FPS
+        dy = new_points[0,1] - old_points[0,1]
+        dx = new_points[0,0] - old_points[0,0]
+        vy = dy/dt
+        vx = dx/dt
+        print('vy: %.2f'%vy)
+        #print('vx: %.2f'%vx)
         old_gray = gray_frame.copy()
         old_points = new_points
         x, y = new_points.ravel()

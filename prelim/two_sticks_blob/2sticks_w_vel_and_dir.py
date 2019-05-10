@@ -139,13 +139,9 @@ if __name__ == '__main__':
 
     left = stick()
     right = stick()
-    bass = stick()
 
     INIT_LEFT = 0
     INIT_RIGHT = 0
-    TRIGGERED_LEFT = 0
-    TRIGGERED_RIGHT = 0
-
     prev_pt = np.array([[0, 0]])
     new_pt = np.array([[0, 0]])
 
@@ -353,10 +349,6 @@ if __name__ == '__main__':
             INIT_RIGHT = 0
 
         #cv2.imshow("AirDrums: Dilation Right", dilation)
-
-        # Check if velocity is considered as downwards
-
-
 
 
         end = time.time()
