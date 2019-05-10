@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 # detect blue foil
 # (ee298z) agatha:~/Documents/MSEE/CS282/cs282-air-drums/prelim/color_identify_mouse$ python color_identify.py
@@ -22,8 +23,20 @@ import numpy as np
 #brightLAB = cv2.cvtColor(bright, cv2.COLOR_BGR2LAB)
 #darkLAB = cv2.cvtColor(dark, cv2.COLOR_BGR2LAB)
 
-img = cv2.imread("../data/blue_foil.png")
-img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#img = cv2.imread("../data/blue_foil.png")
+img = cv2.imread("../data/blue_640.png")
+
+# blue_foil
+# minLAB = np.array([133, 106, 81])
+# maxLAB = np.array([167, 137, 110])
+
+# blue 640
+minLAB = np.array([109, 85, 63])
+maxLAB = np.array([122, 97, 78])
+start = time.time()
+
+#img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+img_lab = img
 
 
 # minLAB = np.array([lab[0] - thresh, lab[1] - thresh, lab[2] - thresh])
@@ -38,26 +51,38 @@ img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
 # maxLAB = np.array([255, 244, 221])
 
 # With lowest 10 and top 10 samples cut off
-minLAB = np.array([133, 106, 81])
-maxLAB = np.array([167, 137, 110])
 
 maskLAB = cv2.inRange(img_lab, minLAB, maxLAB)
-print(maskLAB)
+#print(maskLAB)
 resultLAB = cv2.bitwise_and(img_lab, img_lab, mask = maskLAB)
 
 
 
-kernel = np.ones((5,5),np.uint8)
-erosion = cv2.erode(maskLAB,kernel,iterations = 1)
+kernel = np.ones((10,10),np.uint8)
+#erosion = cv2.erode(maskLAB,kernel,iterations = 1)
 dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
 
 
-cv2.imshow("Output LAB", resultLAB)
-cv2.imshow("erosion", erosion)
+#cv2.imshow("Output LAB", resultLAB)
+#cv2.imshow("erosion", erosion)
+end = time.time()
 cv2.imshow("dilation", dilation)
 
+print("Seconds elapsed: {}".format(end-start))
 # Find contour 
-mask = cv2.inRange(image, lower, upper)
+
+# white = np.array([0, 0, 0])
+# white_2 = np.array([10, 0, 0])
+
+# mask = cv2.inRange(dilation, white, white_2)
+# _, contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, 
+#                                                     cv2.CHAIN_APPROX_NONE)
+# blob = max(contours, key=lambda el: cv2.contourArea(el))
+# M = cv2.moments(blob)
+# center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+# contour = dilation.copy()
+# cv2.circle(contour, center, 2, (0,0,255), -1)
+# cv2.imshow("contour", contour)
 
 
 cv2.waitKey(0)

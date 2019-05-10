@@ -8,6 +8,9 @@ import cv2
 
 def show_webcam(mirror=False):
     cam = cv2.VideoCapture(0)
+
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH,640);
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT,480);
     while True:
         ret_val, img = cam.read()
         if mirror: 
