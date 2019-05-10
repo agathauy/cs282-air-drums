@@ -2,37 +2,29 @@ import numpy as np
 import cv2 as cv
 
 cap = cv.VideoCapture(0)
-width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
-height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-# format: (x, y, width, height)
-crash_loc = (int(0.00*width),int(0.00*height),int(0.34*width),int(0.34*height))
-hihat_loc = (int(0.00*width),int(0.34*height),int(0.33*width),int(0.33*height))
-snare_loc = (int(0.00*width),int(0.67*height),int(0.33*width),int(0.33*height))
-tom1_loc = (int(0.34*width),int(0.34*height),int(0.33*width),int(0.33*height))
-tom2_loc = (int(0.67*width),int(0.34*height),int(0.33*width),int(0.33*height))
-ride_loc = (int(0.67*width),int(0.67*height),int(0.33*width),int(0.33*height))
+# precompute some points
+x1 = int(0.33*width)
+x2 = int(0.66*width)
+y1 = int(0.33*height)
+y2 = int(0.66*height)
 
 while True:
     ret,im = cap.read()
     im = cv.flip(im,1)
 
-    #cv.rectangle(im,(crash_loc[0],crash_loc[1]),(crash_loc[0]+crash_loc[2],crash_loc[1]+crash_loc[3]),(0,255,0),2)
+    point = (x1,y1)
 
-    #cv.rectangle(im,(hihat_loc[0],hihat_loc[1]),(hihat_loc[0]+hihat_loc[2],hihat_loc[1]+hihat_loc[3]),(0,255,0),2)
+    cv.line(im, (x1, 0), (x1, height), (0,255,0), 1, 1)
+    cv.line(im, (x2, 0), (x2, height), (0,255,0), 1, 1)
+    cv.line(im, (0, y1), (width, y1), (0,255,0), 1, 1)
+    cv.line(im, (0, y2), (width, y2), (0,255,0), 1, 1)
 
-    #cv.rectangle(im,(snare_loc[0],snare_loc[1]),(snare_loc[0]+snare_loc[2],snare_loc[1]+snare_loc[3]),(0,255,0),2)
-
-    #cv.rectangle(im,(tom1_loc[0],tom1_loc[1]),(tom1_loc[0]+tom1_loc[2],tom1_loc[1]+tom1_loc[3]),(0,255,0),2)
-
-    #cv.rectangle(im,(tom2_loc[0],tom2_loc[1]),(tom2_loc[0]+tom2_loc[2],tom2_loc[1]+tom2_loc[3]),(0,255,0),2)
-
-    #cv.rectangle(im,(ride_loc[0],ride_loc[1]),(ride_loc[0]+ride_loc[2],ride_loc[1]+ride_loc[3]),(0,255,0),2)
-
-    cv.line(im, (int(0.33*width), 0), (int(0.33*width), int(height)), (0,255,0), 1, 1)
-    cv.line(im, (int(0.66*width), 0), (int(0.66*width), int(height)), (0,255,0), 1, 1)
-    cv.line(im, (0, int(0.33*height)), (int(width), int(0.33*height)), (0,255,0), 1, 1)
-    cv.line(im, (0, int(0.66*height)), (int(width), int(0.66*height)), (0,255,0), 1, 1)
+    (x,y) = point
+    if x1 < x and x < x2 and y1 < y and y < y2:
+        print('Hello World')
 
     cv.imshow('img',im)
     k = cv.waitKey(30) & 0xff
