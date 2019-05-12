@@ -2,8 +2,13 @@ import numpy as np
 import cv2 as cv
 
 cap = cv.VideoCapture(0)
+# width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+# height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+cap.set(cv.CAP_PROP_FRAME_WIDTH,640)
+cap.set(cv.CAP_PROP_FRAME_HEIGHT,480)
 width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+print("width: {}, height: {}".format(width, height))
 
 # precompute some points
 x1 = int(0.33*width)

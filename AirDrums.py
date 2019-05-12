@@ -24,6 +24,17 @@ logger = logging.getLogger()
 
 class AirDrums(object):
     def __init__(self):
+        # Frame details
+        self.frame_width_default = 640
+        self.frame_height_default = 480
+        self.frame_width = 640
+        self.frame_height = 480
+        self.grid_x1 = 0
+        self.grid_x2 = 0
+        self.grid_y1 = 0
+        self.grid_y2 = 0
+        self.grid_color = (0, 255, 0)
+
         # Patch sizes
         # Get 10x10 patch from center
         self.patch_size = 10
@@ -61,7 +72,7 @@ class AirDrums(object):
 
         # Drum sounds
         self.ifDrumSoundsOn = False
-        self.directory_sound = "../../sounds/"
+        self.directory_sound = "./sounds/"
 
         self.drum_snare = None
         self.drum_hihat = None
@@ -137,10 +148,20 @@ class AirDrums(object):
     def computeFPS(self):
         '''
             Calculate initial FPS
+            Also initialize frames
         '''
         self.cam = cv2.VideoCapture(0)
-        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,640)
-        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
+        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
+
+        self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        logger.debug("width: {}, height: {}".format(self.frame_width, self.frame_height))
+
+        self.grid_x1 = int(0.33*self.frame_width)
+        self.grid_x2 = int(0.66*self.frame_width)
+        self.grid_y1 = int(0.33*self.frame_height)
+        self.grid_y2 = int(0.66*self.frame_height)
 
         # Calculate FPS
         num_frames = 10
@@ -197,18 +218,18 @@ class AirDrums(object):
         logger.debug(self.blob_colors[0])
         logger.debug(self.blob_colors[1])
 
-    def drawLines(self, img):
-
-
 
     def playDrums(self):
+        '''
+            The main mode of AirDrums
+        '''
         # Start the blob detection
         while True:
             ret_val, img = self.cam.read()
             img = cv2.flip(img, 1)
 
             start = time.time()
-
+            self.drawGrid(img)
             # Find centroids for all blobs to be detected
             for i, val in enumerate(self.CALIBRATIONS):
                 self.centroidDetection(img, i)
@@ -221,6 +242,16 @@ class AirDrums(object):
             if cv2.waitKey(1) == 27: 
                 # Press esc to quit
                 sys.exit()
+
+    def drawGrid(self, img):
+        '''
+            Draw grid on every frame
+        '''
+        cv2.line(img, (self.grid_x1, 0), (self.grid_x1, self.frame_height), self.grid_color, 1, 1)
+        cv2.line(img, (self.grid_x2, 0), (self.grid_x2, self.frame_height), self.grid_color, 1, 1)
+        cv2.line(img, (0, self.grid_y1), (self.frame_width, self.grid_y1), self.grid_color, 1, 1)
+        cv2.line(img, (0, self.grid_y2), (self.frame_width, self.grid_y2), self.grid_color, 1, 1)
+
 
 
     def centroidDetection(self, img, item_num):
