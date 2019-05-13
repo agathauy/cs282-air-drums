@@ -3,7 +3,7 @@ import numpy as np
 import time
 import sys
 import logging
-
+import pygame
 
 # Configure logger
 #logging.basicConfig(filename="test.log", format='%(filename)s: %(message)s', filemode='w')
@@ -19,19 +19,6 @@ logging.basicConfig(
     ])
 # Create a logger object
 logger = logging.getLogger()
-
-#console = logging.StreamHandler()
-#console.setLevel(logging.DEBUG)
-#logging.getLogger('').addHandler(console)
-# Setting threshold level
-#logger.setLevel(logging.DEBUG)
-
-# # Use the logging methods
-# logger.debug("This is a debug message")  
-# logger.info("For your info")  
-# logger.warning("This is a warning message")  
-# logger.error("This is an error message")  
-# logger.critical("This is a critical message")  
 
 
 
@@ -57,13 +44,35 @@ class AirDrums(object):
 
         # Velocities and accelerations
         self.velocities = [0, 0, 0]
+        self.prev_velocities = [0, 0, 0]
         self.accelerations = [0, 0, 0]
+        self.dir_vertical = [0, 0, 0]
+        self.dir_horizontal = [0, 0, 0]
+        # flag for detection
+        self.flags = [0, 0, 0]
 
         # Init of camera
         self.cam = None
 
         # FPS
         self.FPS = 0
+        # DELTA_T = 1/FPS
+        self.DELTA_T = 0
+
+        # Drum sounds
+        self.ifDrumSoundsOn = False
+        self.directory_sound = "../../sounds/"
+
+        self.drum_snare = None
+        self.drum_hihat = None
+        self.drum_crash = None
+
+        self.drum_tom1 = None
+        self.drum_tom2 = None
+        self.drum_ride = None
+
+        self.drum_floor = None
+        self.drum_bass = None
 
 
 
@@ -113,7 +122,15 @@ class AirDrums(object):
             logger.debug("Calibration Done!")
             self.CALIBRATED = True
 
+    def init_drum_sounds(self):
+        # initialize pygame
+        pygame.mixer.pre_init()
+        pygame.init()
+        self.drum_snare = pygame.mixer.Sound(self.directory_sound + "snare.wav")
+
+
     def init_calibrate(self):
+        # Initialize calibrations
         self.computeFPS()
         self.colorCalibrations()
 
@@ -133,7 +150,10 @@ class AirDrums(object):
         end = time.time()
         seconds = end - start
         self.FPS = num_frames / seconds
+        self.DELTA_T = 1/self.FPS
         logger.debug('FPS: %.2f'%self.FPS)
+        logger.debug('DELTA_T: %.2f'%self.DELTA_T)
+
 
     def colorCalibrations(self):
         '''
@@ -177,6 +197,9 @@ class AirDrums(object):
         logger.debug(self.blob_colors[0])
         logger.debug(self.blob_colors[1])
 
+    def drawLines(self, img):
+
+
 
     def playDrums(self):
         # Start the blob detection
@@ -185,6 +208,7 @@ class AirDrums(object):
             img = cv2.flip(img, 1)
 
             start = time.time()
+
             # Find centroids for all blobs to be detected
             for i, val in enumerate(self.CALIBRATIONS):
                 self.centroidDetection(img, i)
@@ -227,6 +251,7 @@ class AirDrums(object):
             c_areas.append(c_area)
 
         # Find max contour
+        # Check if no contours detected
         if (len(c_areas) != 0):
             max_c_area_index = c_areas.index(max(c_areas))
             logger.debug(max_c_area_index)
@@ -234,7 +259,10 @@ class AirDrums(object):
             M = cv2.moments(contours[max_c_area_index])
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
+
+            # Check if there was detected pt in prev. frame
             if self.INIT_ITEM[item_num] == 0:
+                # No detected contour in prev frame
                 self.INIT_ITEM[item_num] = 1
                 self.new_pt[item_num, 0] = cX
                 self.new_pt[item_num, 1] = cY
@@ -247,13 +275,37 @@ class AirDrums(object):
                 self.new_pt[item_num, 0] = cX
                 self.new_pt[item_num, 1] = cY
 
+
+            # Calculate dynamics given prev pt and new pt
             logger.debug(self.new_pt)
             logger.debug(self.prev_pt)
             dist = np.linalg.norm(self.new_pt-self.prev_pt)
-            self.velocities[item_num] = dist/(1/self.FPS)
-            logger.debug('Velocity Left: %.2f pixels/second'%self.velocities[item_num])
+            self.velocities[item_num] = dist/self.DELTA_T
+            self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
+            self.dir_vertical[item_num] = self.new_pt[item_num,1] - self.prev_pt[item_num,1]
+            self.dir_horizontal[item_num] = self.new_pt[item_num,0] - self.prev_pt[item_num,0]
+
+            logger.debug('Velocity: %.2f pixels/second'%self.velocities[item_num])
+            logger.debug('Acceleration {}: {} pixels/second'.format(item, self.accelerations[item_num]))
+
+            # Apply thresholding given acceleration
+            # For left and right sticks
+            if item != "Bass":
+                if (self.accelerations[item_num] < -4000) and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+                    logger.debug('Acceleration {}: {} pixels/second'.format(item, self.accelerations[item_num]))
+                    self.flags[item_num] = 20
+                    if self.ifDrumSoundsOn == True:
+                        # Detect area to determine which drum sound to play
+                        # Temporary play snare
+                        self.drum_snare.play()
+                    self.prev_velocities[item_num] = self.velocities[item_num]
+                    self.flags[item_num] = self.flags[item_num] - 1
+
+
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
             cv2.putText(img, item, (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+
 
         else:
             self.INIT_ITEM[item_num] = 0
@@ -264,5 +316,7 @@ class AirDrums(object):
 
 if __name__ == '__main__':
     drums = AirDrums()
+    # Comment out below line to remove drum sounds
+    drums.init_drum_sounds()
     drums.init_calibrate()
     drums.playDrums()

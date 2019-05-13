@@ -4,7 +4,6 @@ import time
 import pygame
 
 class stick:
-    
     def __init__(self):
         self.color = (0, 0, 0)  # color in rgb
         self.position = (1, 1)  # position in (x,y)
