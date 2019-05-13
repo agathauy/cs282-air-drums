@@ -223,6 +223,7 @@ if __name__ == '__main__':
     # Start the blob detection
     while True:
         ret_val, img = cam.read()
+        start = time.time()
         img = cv2.flip(img, 1)
 
         # For calibration
@@ -231,8 +232,6 @@ if __name__ == '__main__':
         #cv2.imshow('AirDrums', img)
 
         # Do the blob detection
-        start = time.time()
-
 
         # Detect for Left Stick
         maskLAB = cv2.inRange(img, min_rgb[0], max_rgb[0])
@@ -275,9 +274,11 @@ if __name__ == '__main__':
 
             # calculate the dynamics
             left.calcDynamics(prev_pt,new_pt)
-            
+            print('Velocity Left: %.2f'%left.velocity) 
             if left.acceleration < -4000 and left.dir_vertical > 0 and left.flag < 0:
                 print('Acceration Left: %.2f pixels/second'%left.acceleration)
+                #loudness = min(abs(left.acceleration)/40000,1.0)
+                #snare.set_volume(loudness)
                 snare.play()
                 left.flag = 20
             
@@ -336,9 +337,11 @@ if __name__ == '__main__':
 
             # calculate the dynamics
             right.calcDynamics(prev_pt,new_pt)
-            
+            print('Right Velocity: %.2f'%right.velocity)
             if right.acceleration < -4000 and right.dir_vertical > 0 and right.flag < 0:
                 print('Acceration Right: %.2f pixels/second'%right.acceleration)
+                #loudness = min(abs(right.acceleration)/20000,1.0)
+                #hihat.set_volume(loudness)
                 hihat.play()
                 right.flag = 20
             
@@ -357,12 +360,11 @@ if __name__ == '__main__':
         # Check if velocity is considered as downwards
 
 
-
-
-        end = time.time()
         cv2.imshow("AirDrums: Centroid", img_contours)
-
-
+        
+        end = time.time()
+        DELTA_T = end - start
+        print('Time Step: %.2f'%DELTA_T)
         #print("Seconds elapsed: {}".format(end-start))
 
         if cv2.waitKey(1) == 27: 

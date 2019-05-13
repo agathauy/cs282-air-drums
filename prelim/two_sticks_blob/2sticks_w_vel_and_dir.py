@@ -7,22 +7,26 @@ class stick:
     def __init__(self):
         self.color = (0, 0, 0)  # color in rgb
         self.position = (1, 1)  # position in (x,y)
-        self.velocity = 0       # velocity in pixels/second
-        self.acceleration = 0   # acceleration in pixels/second^2
-        self.dir_vertical = 0   # downward: > 0, upward: < 0
-        self.dir_horizontal = 0 # forward: > 0, backward: < 0
+        self.velocity = (0, 0)  # velocity in pixels/second
+        self.acceleration = (0,0)   # acceleration in pixels/second^2
+        #self.dir_vertical = 0   # downward: > 0, upward: < 0
+        #self.dir_horizontal = 0 # forward: > 0, backward: < 0
         self.flag = 0           # flag for detection
-        self.v_old = 0          # old velocity
+        #self.v_old = 0          # old velocity
 
     #def calibration():
     
-    def calcDynamics(self, prev_pt, new_pt):
+    def calcDynamics(self, prev_pt, new_pt, v_old):
         self.position = new_pt
-        dist = np.linalg.norm(new_pt-prev_pt)
-        self.velocity = dist/DELTA_T
-        self.acceleration = (self.velocity - self.v_old)/DELTA_T
-        self.dir_vertical = new_pt[0,1] - prev_pt[0,1]
-        self.dir_horizontal = new_pt[0,0] - prev_pt[0,0]
+        dt = DELTA_T
+        dx = new_pt[0,0] - prev_pt[0,0]
+        dy = new_pt[0,1] - prev_pt[0,1]
+        vx = dx/dt
+        vy = dy/dt
+        ax = (vx-v_old[0])/dt
+        ay = (vy-v_old[1])/dt
+        self.velocity = (vx, vy)
+        self.acceleration = (ax, ay)
 
 # Path of image to import
 #path_image = '../data/blue_foil.png'
@@ -149,7 +153,6 @@ if __name__ == '__main__':
     cam.set(cv2.CAP_PROP_FRAME_WIDTH,640);
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT,480);
 
-
     # Calculate FPS
     global FPS
     global DELTA_T
@@ -159,7 +162,8 @@ if __name__ == '__main__':
         ret, frame = cam.read()
     end = time.time()
     seconds = end - start
-    FPS = num_frames / seconds
+    FPS = cam.get(cv2.CAP_PROP_FPS)
+    #FPS = num_frames / seconds
     DELTA_T = 1/FPS
     print('FPS: %.2f'%FPS)
 
@@ -212,8 +216,8 @@ if __name__ == '__main__':
     # initializations
     flag_left = 0
     flag_right = 0
-    v_old_left = 0
-    v_old_right = 0
+    v_old_left = (0,0)
+    v_old_right = (0,0)
 
     # Start the blob detection
     while True:
@@ -269,15 +273,16 @@ if __name__ == '__main__':
                 new_pt[0, 1] = cY
 
             # calculate the dynamics
-            left.calcDynamics(prev_pt,new_pt)
-            
-            if left.acceleration < -4000 and left.dir_vertical > 0 and left.flag < 0:
-                print('Acceration Left: %.2f pixels/second'%left.acceleration)
+            left.calcDynamics(prev_pt,new_pt,v_old_left)
+            print('acc:%.2f'%left.acceleration[1])
+            print('vel:%.2f'%left.velocity[1])
+            if left.acceleration[1] < -10000 and left.flag < 0:
+                #print('Acceration Left: %.2f pixels/second'%left.acceleration[1])
                 snare.play()
                 left.flag = 20
             
             # left re-settings
-            left.v_old = left.velocity
+            v_old_left = left.velocity
             left.flag -= 1
             
             cv2.circle(img_contours, (cX, cY), 5, blob_color_left, -1)
@@ -330,19 +335,19 @@ if __name__ == '__main__':
                 new_pt[0, 1] = cY
 
             # calculate the dynamics
-            right.calcDynamics(prev_pt,new_pt)
+            #right.calcDynamics(prev_pt,new_pt)
             
-            if right.acceleration < -4000 and right.dir_vertical > 0 and right.flag < 0:
-                print('Acceration Right: %.2f pixels/second'%right.acceleration)
-                hihat.play()
-                right.flag = 20
-            
-            # right re-settings
-            right.v_old = right.velocity
-            right.flag -= 1
-            
-            cv2.circle(img_contours, (cX, cY), 5, blob_color_right, -1)
-            cv2.putText(img_contours, "Right", (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            #if right.acceleration < -4000 and right.dir_vertical > 0 and right.flag < 0:
+            #    print('Acceration Right: %.2f pixels/second'%right.acceleration)
+            #    hihat.play()
+            #    right.flag = 20
+            #
+            ## right re-settings
+            #right.v_old = right.velocity
+            #right.flag -= 1
+            #
+            #cv2.circle(img_contours, (cX, cY), 5, blob_color_right, -1)
+            #cv2.putText(img_contours, "Right", (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         else:
             INIT_RIGHT = 0
