@@ -679,6 +679,26 @@ class AirDrums(object):
         '''
 
         logger.debug("[DETECT BASS TRIGGER]")
+        item_num = 2
+
+        self.calculateDynamics(img, item_num)
+
+        if (self.accelerations[item_num] < -5000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+            logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
+            self.flags[item_num] = 2
+
+            # Detect which area was triggered
+            #self.detectArea(img,item_num)
+
+            # Check if bass area was triggered
+            if (self.new_pt[item_num, 0] <= self.coord_bass[1,0]) and (self.new_pt[item_num,0] >= self.coord_bass[0, 0]) and (self.new_pt[item_num, 1] <= self.coord_bass[1,1]) and (self.new_pt[item_num, 1] >= self.coord_bass[0, 1]):
+                logger.debug("[DETECT AREA]: Bass")
+                cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_2, 2)
+                cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                if self.ifDrumSoundsOn:
+                    self.drum_bass.play()
+
 
 if __name__ == '__main__':
     drums = AirDrums()
