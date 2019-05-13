@@ -34,6 +34,9 @@ class AirDrums(object):
         self.grid_y1 = 0
         self.grid_y2 = 0
         self.grid_color = (0, 255, 0)
+        
+        
+
 
         # Patch sizes
         # Get 10x10 patch from center
@@ -72,7 +75,7 @@ class AirDrums(object):
 
         # Drum sounds
         self.ifDrumSoundsOn = False
-        self.directory_sound = "./sounds/"
+        self.directory_sound = "../../sounds/"
 
         self.drum_snare = None
         self.drum_hihat = None
@@ -84,6 +87,22 @@ class AirDrums(object):
 
         self.drum_floor = None
         self.drum_bass = None
+
+        # Drum coordinates, upper left, lowerr right coordinates in [x, y]
+        # 3rd coordinate is placement of drum name
+        self.coord_snare = np.array([[0, 0], [0, 0], [0, 0]])
+        self.coord_hihat = np.array([[0, 0], [0, 0], [0, 0]])
+        self.coord_crash = np.array([[0, 0], [0, 0], [0, 0]])
+        
+        self.coord_tom1 = np.array([[0, 0], [0, 0], [0, 0]])
+        self.coord_tom2 = np.array([[0, 0], [0, 0], [0, 0]])
+        self.coord_ride = np.array([[0, 0], [0, 0], [0, 0]])
+
+        self.coord_floor = np.array([[0, 0], [0, 0], [0, 0]])
+        self.coord_bass = np.array([[0, 0], [0, 0], [0, 0]])
+
+        self.drum_color_1 =  (0, 255, 0)
+        self.drum_color_2 = (255, 0, 0)
 
 
 
@@ -142,13 +161,13 @@ class AirDrums(object):
 
     def init_calibrate(self):
         # Initialize calibrations
-        self.computeFPS()
+        self.frameCalibration()
         self.colorCalibrations()
 
-    def computeFPS(self):
+    def frameCalibration(self):
         '''
             Calculate initial FPS
-            Also initialize frames
+            Also initialize frames and drum coordinates
         '''
         self.cam = cv2.VideoCapture(0)
         self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
@@ -163,8 +182,54 @@ class AirDrums(object):
         self.grid_y1 = int(0.33*self.frame_height)
         self.grid_y2 = int(0.66*self.frame_height)
 
+        # Initialize drum area bounding box coordinates
+
+        # Left column of boxes
+        self.coord_crash[0,:] = [0,0]
+        self.coord_crash[1,:] = [self.grid_x1, self.grid_y1]
+        self.coord_crash[2,:] = [((self.coord_crash[0,0] + self.coord_crash[1,0])/2) - 25, self.coord_crash[0,1] + 25]
+
+        self.coord_hihat[0,:] = [0, self.grid_y1]
+        self.coord_hihat[1,:] = [self.grid_x1, self.grid_y2]
+        self.coord_hihat[2,:] = [((self.coord_hihat[0,0] + self.coord_hihat[1,0])/2) - 25, self.coord_hihat[0,1] + 25]
+
+
+        self.coord_snare[0,:] = [0,self.grid_y2]
+        self.coord_snare[1,:] = [self.grid_x1, self.frame_height]
+        self.coord_snare[2,:] = [((self.coord_snare[0,0] + self.coord_snare[1,0])/2) - 25, self.coord_snare[0,1] + 25]
+
+
+        # Center column of boxes
+        self.coord_tom1[0,:] = [self.grid_x1, self.grid_y1]
+        self.coord_tom1[1,:] = [self.grid_x2, self.grid_y2]
+        self.coord_tom1[2,:] = [((self.coord_tom1[0,0] + self.coord_tom1[1,0])/2) - 25, self.coord_tom1[0,1] + 25]
+
+
+        self.coord_bass[0,:] = [self.grid_x1, self.grid_y2]
+        self.coord_bass[1,:] = [self.grid_x2, self.frame_height]
+        self.coord_bass[2,:] = [((self.coord_bass[0,0] + self.coord_bass[1,0])/2) - 25, self.coord_bass[0,1] + 25]
+
+
+        # Right column of boxes
+        self.coord_ride[0,:] = [self.grid_x2, 0]
+        self.coord_ride[1,:] = [self.frame_width, self.grid_y1]
+        self.coord_ride[2,:] = [((self.coord_ride[0,0] + self.coord_ride[1,0])/2) - 25, self.coord_ride[0,1] + 25]
+
+
+        self.coord_tom2[0,:] = [self.grid_x2, self.grid_y1]
+        self.coord_tom2[1,:] = [self.frame_width, self.grid_y1]
+        self.coord_tom2[2,:] = [((self.coord_tom2[0,0] + self.coord_tom2[1,0])/2) - 25, self.coord_tom2[0,1] + 25]
+
+
+        self.coord_floor[0,:] = [self.grid_x2, self.grid_y2]
+        self.coord_floor[1,:] = [self.frame_width, self.frame_height]
+        self.coord_floor[2,:] = [((self.coord_floor[0,0] + self.coord_floor[1,0])/2) - 25, self.coord_floor[0,1] + 25]
+
+
+
+
         # Calculate FPS
-        num_frames = 10
+        num_frames = 20
         start = time.time()
         for i in range(num_frames):
             ret, frame = self.cam.read()
@@ -229,7 +294,16 @@ class AirDrums(object):
             img = cv2.flip(img, 1)
 
             start = time.time()
+
+            # Draw green grid
             self.drawGrid(img)
+            # Draw drum names
+            self.drawDrumNames(img)
+
+            #cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_2, 2)
+            #cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+
             # Find centroids for all blobs to be detected
             for i, val in enumerate(self.CALIBRATIONS):
                 self.centroidDetection(img, i)
@@ -242,6 +316,23 @@ class AirDrums(object):
             if cv2.waitKey(1) == 27: 
                 # Press esc to quit
                 sys.exit()
+
+    def drawDrumNames(self, img):
+        '''
+            Draw drum names on every frame
+        '''
+        cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+        cv2.putText(img, "HIHAT", (self.coord_hihat[2,0], self.coord_hihat[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+        cv2.putText(img, "SNARE", (self.coord_snare[2,0], self.coord_snare[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+
+        cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+        cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+
+        cv2.putText(img, "RIDE", (self.coord_ride[2,0], self.coord_ride[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+        cv2.putText(img, "TOM2", (self.coord_tom2[2,0], self.coord_tom2[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+        cv2.putText(img, "FLOOR", (self.coord_floor[2,0], self.coord_floor[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_1, 2)
+
+
 
     def drawGrid(self, img):
         '''
@@ -265,7 +356,7 @@ class AirDrums(object):
         else:
             logging.error("Invalid item_num")
             sys.exit()
-
+        start = time.time()
         # Detect for blob
         maskLAB = cv2.inRange(img, self.min_rgb[item_num], self.max_rgb[item_num])
         kernel = np.ones((10,10),np.uint8)
@@ -306,6 +397,9 @@ class AirDrums(object):
                 self.new_pt[item_num, 0] = cX
                 self.new_pt[item_num, 1] = cY
 
+            end = time.time()
+            logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
+            start = time.time()
 
             # Calculate dynamics given prev pt and new pt
             logger.debug(self.new_pt)
@@ -322,15 +416,19 @@ class AirDrums(object):
             # Apply thresholding given acceleration
             # For left and right sticks
             if item != "Bass":
+
+                # If dynamics 
                 if (self.accelerations[item_num] < -4000) and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
                     logger.debug('Acceleration {}: {} pixels/second'.format(item, self.accelerations[item_num]))
                     self.flags[item_num] = 20
                     if self.ifDrumSoundsOn == True:
                         # Detect area to determine which drum sound to play
-                        # Temporary play snare
                         self.drum_snare.play()
                     self.prev_velocities[item_num] = self.velocities[item_num]
                     self.flags[item_num] = self.flags[item_num] - 1
+
+                end = time.time()
+                logger.debug("[DYNAMICS]: Seconds elapsed: {}".format(end-start))
 
 
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
@@ -342,8 +440,13 @@ class AirDrums(object):
             self.INIT_ITEM[item_num] = 0
             #INIT_LEFT = 0
 
-
-
+    def detectArea(self, item_num):
+        '''
+            Detect area given item number
+            0 - Left, 1 - Right, 2 - Bass
+        '''
+        # if (item_num != 2):
+        #     Check if in drum locations
 
 if __name__ == '__main__':
     drums = AirDrums()
