@@ -91,6 +91,7 @@ class AirDrums(object):
 
         # Drum coordinates, upper left, lowerr right coordinates in [x, y]
         # 3rd coordinate is placement of drum name
+        # 4th coordinate is y coordinate for 50% area coverage
         self.coord_crash = np.array([[0, 0], [0, 0], [0, 0]])
         self.coord_hihat = np.array([[0, 0], [0, 0], [0, 0]])
         self.coord_snare = np.array([[0, 0], [0, 0], [0, 0]])
@@ -105,6 +106,8 @@ class AirDrums(object):
         self.drum_color_1 =  (0, 255, 0)
         self.drum_color_2 = (255, 0, 0)
 
+
+        # Drum sounds
 
 
     def cb_calibrate(self, event, x, y, flags, params):
@@ -193,6 +196,10 @@ class AirDrums(object):
         self.grid_x2 = int(0.66*self.frame_width)
         self.grid_y1 = int(0.33*self.frame_height)
         self.grid_y2 = int(0.66*self.frame_height)
+
+        self.grid_y1_5 = int(0.16*self.frame_height)
+        self.grid_y2_5 = int(0.48*self.frame_height)
+        self.grid_y3_5 = int(0.8*self.frame_height)
 
         # Initialize drum area bounding box coordinates
 
@@ -302,11 +309,11 @@ class AirDrums(object):
             The main mode of AirDrums
         '''
         # Start the blob detection
-        otherFrame = 1
+        otherFrame = 0
         while True:
             ret_val, img = self.cam.read()
 
-            if otherFrame == 1:
+            if otherFrame <= 0:
 
                 img = cv2.flip(img, 1)
 
@@ -323,12 +330,15 @@ class AirDrums(object):
                     self.centroidDetection(img, i)
 
                 # Calculate dynamics for all blobs
-                for i, val in enumerate(self.CALIBRATIONS):
-                    self.calculateDynamics(img, i)
+                #for i, val in enumerate(self.CALIBRATIONS):
+                #    self.calculateDynamics(img, i)
 
                 # Check what drum pad was triggered
+                # for i, val in enumerate(self.CALIBRATIONS):
+                #     self.detectTriggerThruDynamics(img, i)
+
                 for i, val in enumerate(self.CALIBRATIONS):
-                    self.detectTriggerThruDynamics(img, i)
+                    self.detectTriggerThruArea(img, i)
 
                 end = time.time()
                 logger.debug("Seconds elapsed: {}".format(end-start))
@@ -336,7 +346,7 @@ class AirDrums(object):
 
                 otherFrame = 0
             else:
-                otherFrame = 1
+                otherFrame = otherFrame - 1
 
 
             if cv2.waitKey(1) == 27: 
@@ -368,6 +378,12 @@ class AirDrums(object):
         cv2.line(img, (self.grid_x2, 0), (self.grid_x2, self.frame_height), self.grid_color, 1, 1)
         cv2.line(img, (0, self.grid_y1), (self.frame_width, self.grid_y1), self.grid_color, 1, 1)
         cv2.line(img, (0, self.grid_y2), (self.frame_width, self.grid_y2), self.grid_color, 1, 1)
+
+
+        # For 50%
+        cv2.line(img, (0, self.grid_y1_5), (self.frame_width, self.grid_y1_5), self.drum_color_2, 1, 1)
+        cv2.line(img, (0, self.grid_y2_5), (self.frame_width, self.grid_y2_5), self.drum_color_2, 1, 1)
+        cv2.line(img, (0, self.grid_y3_5), (self.frame_width, self.grid_y3_5), self.drum_color_2, 1, 1)
 
 
 
@@ -428,6 +444,9 @@ class AirDrums(object):
 
         else:
             self.INIT_ITEM[item_num] = 0
+
+            self.prev_pt[item_num, 0] = 0
+            self.prev_pt[item_num, 1] = 0
             #INIT_LEFT = 0
 
 
@@ -512,7 +531,6 @@ class AirDrums(object):
         elif (self.new_pt[item_num, 0] <= self.grid_x2):
             # 2nd Column
             if (self.new_pt[item_num, 1] <= self.grid_y2):
-                
                 logger.debug("[DETECT AREA]: Tom1")
                 cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
@@ -547,7 +565,7 @@ class AirDrums(object):
 
 
 
-    def detectTriggerThruArea(self, item_num):
+    def detectTriggerThruArea(self, img, item_num):
         '''
             Detect trigger thru lower half and upper half of each area
             0 - Left, 1 - Right, 2 - Bass
@@ -555,8 +573,93 @@ class AirDrums(object):
             If previous point was from the upper half of the area, and new pt is in lower half
             Means strike
         '''
-        # if (item_num != 2):
-        #     Check if in drum locations
+
+        if (self.prev_pt[item_num, 0] == 0) and (self.prev_pt[item_num,1] == 0):
+            return
+
+        if (self.new_pt[item_num, 0] == 0) and (self.new_pt[item_num, 1] == 0):
+            return
+
+
+        # Check for left and right sticks
+        if item_num != 2:
+            # For first column
+            if (self.new_pt[item_num, 0] <= self.grid_x1):
+                if (self.new_pt[item_num, 1] <= self.grid_y1) and (self.new_pt[item_num, 1] >= self.grid_y1_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y1_5) and (self.prev_pt[item_num, 0] <= self.grid_x1)):
+                        logger.debug("[DETECT AREA]: Crash")
+                        cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_crash.play()
+
+                elif (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y2_5) and (self.prev_pt[item_num, 1] >= self.grid_y1) and (self.prev_pt[item_num, 0] <= self.grid_x1)):
+
+                        logger.debug("[DETECT AREA]: Hi-hat")
+                        cv2.rectangle(img, (self.coord_hihat[0,0], self.coord_hihat[0,1]), (self.coord_hihat[1,0], self.coord_hihat[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "HIHAT", (self.coord_hihat[2,0], self.coord_hihat[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_hihat.play()
+                elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y3_5) and (self.prev_pt[item_num, 1] >= self.grid_y2) and (self.prev_pt[item_num, 0] <= self.grid_x1)):
+
+                        logger.debug("[DETECT AREA]: Snare")
+                        logger.debug("prev_pt: {}".format(self.prev_pt[item_num]))
+                        logger.debug("new_pt: {}".format(self.new_pt[item_num]))
+
+                        cv2.rectangle(img, (self.coord_snare[0,0], self.coord_snare[0,1]), (self.coord_snare[1,0], self.coord_snare[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "SNARE", (self.coord_snare[2,0], self.coord_snare[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_snare.play()
+
+            elif (self.new_pt[item_num, 0] <= self.grid_x2) and (self.new_pt[item_num,0] > self.grid_x1):
+                # 2nd Column
+                if (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y2_5) and (self.prev_pt[item_num, 1] >= self.grid_y1) and (self.prev_pt[item_num, 0] >= self.grid_x1) and (self.prev_pt[item_num,0] <=self.grid_x2)):
+
+                        logger.debug("[DETECT AREA]: Tom1")
+                        cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_tom1.play()
+
+            elif (self.new_pt[item_num, 0] >= self.grid_x2):
+                # for 3rd column
+                if (self.new_pt[item_num, 1] <= self.grid_y1) and (self.new_pt[item_num, 1] >= self.grid_y1_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y1_5) and (self.prev_pt[item_num, 0] >= self.grid_x2) and (self.prev_pt[item_num, 0] <= self.frame_width)):
+
+                        logger.debug("[DETECT AREA]: Ride")
+                        cv2.rectangle(img, (self.coord_ride[0,0], self.coord_ride[0,1]), (self.coord_ride[1,0], self.coord_ride[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "RIDE", (self.coord_ride[2,0], self.coord_ride[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_ride.play()
+
+                elif (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y2_5) and (self.prev_pt[item_num, 0] >= self.grid_x2) and (self.prev_pt[item_num, 0] <= self.frame_width)):
+
+                        logger.debug("[DETECT AREA]: Tom2")
+                        cv2.rectangle(img, (self.coord_tom2[0,0], self.coord_tom2[0,1]), (self.coord_tom2[1,0], self.coord_tom2[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "TOM2", (self.coord_tom2[2,0], self.coord_tom2[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_tom2.play()
+                elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
+                    if ((self.prev_pt[item_num, 1]<= self.grid_y3_5) and (self.prev_pt[item_num, 0] >= self.grid_x2) and (self.prev_pt[item_num, 0] <= self.frame_width)):
+
+                        logger.debug("[DETECT AREA]: Floor")
+                        cv2.rectangle(img, (self.coord_floor[0,0], self.coord_floor[0,1]), (self.coord_floor[1,0], self.coord_floor[1,1]), self.drum_color_2, 2)
+                        cv2.putText(img, "FLOOR", (self.coord_floor[2,0], self.coord_floor[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
+
+                        if self.ifDrumSoundsOn:
+                            self.drum_floor.play()
+
+
 
 if __name__ == '__main__':
     drums = AirDrums()
