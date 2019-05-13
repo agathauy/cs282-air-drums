@@ -154,6 +154,7 @@ class AirDrums(object):
         # initialize pygame
         pygame.mixer.pre_init()
         pygame.init()
+        self.ifDrumSoundsOn = True
         self.drum_snare = pygame.mixer.Sound(self.directory_sound + "snare.wav")
 
 
@@ -412,6 +413,8 @@ class AirDrums(object):
             self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
             self.dir_vertical[item_num] = self.new_pt[item_num,1] - self.prev_pt[item_num,1]
             self.dir_horizontal[item_num] = self.new_pt[item_num,0] - self.prev_pt[item_num,0]
+            self.prev_velocities[item_num] = self.velocities[item_num]
+            self.flags[item_num] -= 1
 
             logger.debug('Velocity: %.2f pixels/second'%self.velocities[item_num])
             logger.debug('Acceleration {}: {} pixels/second'.format(item, self.accelerations[item_num]))
@@ -420,15 +423,16 @@ class AirDrums(object):
             # For left and right sticks
             if item != "Bass":
 
+                print('flags: %d'%self.flags[item_num])
                 # If dynamics 
                 if (self.accelerations[item_num] < -4000) and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+                    logger.debug('Hello World')
                     logger.debug('Acceleration {}: {} pixels/second'.format(item, self.accelerations[item_num]))
                     self.flags[item_num] = 20
-                    if self.ifDrumSoundsOn == True:
+                    self.drum_snare.play()
+                    #if self.ifDrumSoundsOn == True:
                         # Detect area to determine which drum sound to play
-                        self.drum_snare.play()
-                    self.prev_velocities[item_num] = self.velocities[item_num]
-                    self.flags[item_num] = self.flags[item_num] - 1
+                    #    self.drum_snare.play()
 
                 end = time.time()
                 logger.debug("[DYNAMICS]: Seconds elapsed: {}".format(end-start))
@@ -437,8 +441,8 @@ class AirDrums(object):
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
             cv2.putText(img, item, (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-            velocity_str = "{:.2f}".format(self.velocities[item_num])
-            cv2.putText(img, velocity_str, (cX - 50, cY - 50),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            acceleration_str = "{:.2f}".format(self.accelerations[item_num])
+            cv2.putText(img, acceleration_str, (cX - 50, cY - 50),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
 
 
