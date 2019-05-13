@@ -20,8 +20,6 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger()
 
-
-
 class AirDrums(object):
     def __init__(self):
         # Frame details
@@ -34,7 +32,7 @@ class AirDrums(object):
         self.grid_y1 = 0
         self.grid_y2 = 0
         self.grid_color = (0, 255, 0)
-
+        
 
         # Patch sizes
         # Get 10x10 patch from center
@@ -118,7 +116,7 @@ class AirDrums(object):
         if event == cv2.EVENT_LBUTTONDOWN:
             point = (x, y)
             line = "[x,y]: {},{} (rgb): ({})".format(point[0], point[1], img[y, x])
-            logger.debug(line)
+            #logger.debug(line)
 
             step_size = int(self.patch_size/2)
             height, width = img.shape[:2]
@@ -129,10 +127,10 @@ class AirDrums(object):
 
             # Check for top_left for out of bounds
             if (top_left[0] >= height) or (top_left[0] < 0) or (top_left[1] >= width) or (top_left[1] < 0):
-                logger.debug("out of bounds")
+                #logger.debug("out of bounds")
                 return
             if (bottom_right[0] >= height) or (bottom_right[0] < 0) or (bottom_right[1] >= width) or (bottom_right[1] < 0):
-                logger.debug("out of bounds")
+                #logger.debug("out of bounds")
                 return
 
             # Get descriptor, going through rows
@@ -141,7 +139,7 @@ class AirDrums(object):
                 for n in range(top_left[1], bottom_right[1] + 1):
                     descriptor.append(img[m, n])
             descriptor = np.array(descriptor)
-            logger.debug(descriptor)
+            #logger.debug(descriptor)
 
             self.min_rgb[item_num, 0] = np.min(descriptor[:,0][self.patch_size:self.patch_total_size-self.patch_size])
             self.max_rgb[item_num, 0] = np.max(descriptor[:,0][self.patch_size:self.patch_total_size-self.patch_size])
@@ -150,7 +148,7 @@ class AirDrums(object):
             self.min_rgb[item_num, 2] = np.min(descriptor[:,2][self.patch_size:self.patch_total_size-self.patch_size])
             self.max_rgb[item_num, 2] = np.max(descriptor[:,2][self.patch_size:self.patch_total_size-self.patch_size])
 
-            logger.debug("Calibration Done!")
+            #logger.debug("Calibration Done!")
             self.CALIBRATED = True
 
     def init_drum_sounds(self):
@@ -187,7 +185,7 @@ class AirDrums(object):
 
         self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        logger.debug("width: {}, height: {}".format(self.frame_width, self.frame_height))
+        #logger.debug("width: {}, height: {}".format(self.frame_width, self.frame_height))
 
         self.grid_x1 = int(0.33*self.frame_width)
         self.grid_x2 = int(0.66*self.frame_width)
@@ -250,8 +248,8 @@ class AirDrums(object):
         self.FPS = 30
         #self.FPS = num_frames / seconds
         self.DELTA_T = 1/self.FPS
-        logger.debug('FPS: %.2f'%self.FPS)
-        logger.debug('DELTA_T: %.2f'%self.DELTA_T)
+        #logger.debug('FPS: %.2f'%self.FPS)
+        #logger.debug('DELTA_T: %.2f'%self.DELTA_T)
 
 
     def colorCalibrations(self):
@@ -287,14 +285,14 @@ class AirDrums(object):
             cv2.destroyAllWindows()
             self.CALIBRATED = False
             self.CALIBRATIONS[i] = 1
-            logger.debug(self.min_rgb)
-            logger.debug(self.max_rgb)
+            #logger.debug(self.min_rgb)
+            #logger.debug(self.max_rgb)
 
         self.blob_colors[0] = (int(self.min_rgb[0, 0]), int(self.min_rgb[0, 1]), int(self.min_rgb[0, 2]))
         self.blob_colors[1] = (int(self.min_rgb[1, 0]), int(self.min_rgb[1, 1]), int(self.min_rgb[1, 2]))
-        logger.debug('BLOB_COLORS')
-        logger.debug(self.blob_colors[0])
-        logger.debug(self.blob_colors[1])
+        #logger.debug('BLOB_COLORS')
+        #logger.debug(self.blob_colors[0])
+        #logger.debug(self.blob_colors[1])
 
 
     def playDrums(self):
@@ -327,7 +325,7 @@ class AirDrums(object):
                 self.detectTriggerThruDynamics(img, i)
 
             end = time.time()
-            logger.debug("Seconds elapsed: {}".format(end-start))
+            #logger.debug("Seconds elapsed: {}".format(end-start))
             cv2.imshow("AirDrums: Centroid", img)
 
 
@@ -390,7 +388,7 @@ class AirDrums(object):
         # Check if no contours detected
         if (len(c_areas) != 0):
             max_c_area_index = c_areas.index(max(c_areas))
-            logger.debug(max_c_area_index)
+            #logger.debug(max_c_area_index)
             # Calculate moment and center of contour
             M = cv2.moments(contours[max_c_area_index])
             cX = int(M["m10"] / M["m00"])
@@ -412,7 +410,7 @@ class AirDrums(object):
                 self.new_pt[item_num, 1] = cY
 
             end = time.time()
-            logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
+            #logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
             
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
             cv2.putText(img, item, (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
@@ -427,8 +425,8 @@ class AirDrums(object):
         start = time.time()
 
         # Calculate dynamics given prev pt and new pt
-        logger.debug(self.new_pt[item_num])
-        logger.debug(self.prev_pt[item_num])
+        #logger.debug(self.new_pt[item_num])
+        #logger.debug(self.prev_pt[item_num])
         dist = np.linalg.norm(self.new_pt[item_num]-self.prev_pt[item_num])
         self.velocities[item_num] = dist/self.DELTA_T
         self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
@@ -437,8 +435,8 @@ class AirDrums(object):
         self.prev_velocities[item_num] = self.velocities[item_num]
         self.flags[item_num] -= 1
 
-        logger.debug('Velocity: %.2f pixels/second'%self.velocities[item_num])
-        logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
+        #logger.debug('Velocity: %.2f pixels/second'%self.velocities[item_num])
+        #logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
 
         # Apply thresholding given acceleration
 
@@ -446,7 +444,7 @@ class AirDrums(object):
         cv2.putText(img, acceleration_str, (self.new_pt[item_num,0] - 50, self.new_pt[item_num,1]  - 50),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         end = time.time()
-        logger.debug("[DYNAMICS]: Seconds elapsed: {}".format(end-start))
+        #logger.debug("[DYNAMICS]: Seconds elapsed: {}".format(end-start))
 
     def detectTriggerThruDynamics(self, img, item_num):
         '''
@@ -454,13 +452,13 @@ class AirDrums(object):
         '''
         # For left and right sticks
         if item_num != 2:
-            logger.debug("[LEFT&RIGHT: CALCULATE DYNAMICS]")
+            #logger.debug("[LEFT&RIGHT: CALCULATE DYNAMICS]")
 
-            logger.debug('flags: %d'%self.flags[item_num])
+            #logger.debug('flags: %d'%self.flags[item_num])
             # Triggered!
-            if (self.accelerations[item_num] < -4000) and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+            if (self.accelerations[item_num] < -5000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
                 logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
-                self.flags[item_num] = 5
+                self.flags[item_num] = 2
 
                 # Detect which area was triggered
                 self.detectArea(img,item_num)
@@ -468,18 +466,19 @@ class AirDrums(object):
         else:
             # For bass drum
             logger.debug("[BASS DRUM: CALCULATE DYNAMICS]")
+            
 
     def detectArea(self, img, item_num):
         '''
             Detect area given left or right stick
         '''
-        logger.debug("[Detect area]: {}".format(self.DRUM_ITEMS[item_num]))
+        #logger.debug("[Detect area]: {}".format(self.DRUM_ITEMS[item_num]))
         #if self.new_pt[i, 0]
 
         # For first column
         if (self.new_pt[item_num, 0] <= self.grid_x1):
             if (self.new_pt[item_num, 1] <= self.grid_y1):
-                logger.debug("[DETECT AREA]: Crash")
+                #logger.debug("[DETECT AREA]: Crash")
                 cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
@@ -487,14 +486,14 @@ class AirDrums(object):
                     self.drum_crash.play()
 
             elif (self.new_pt[item_num, 1] <= self.grid_y2):
-                logger.debug("[DETECT AREA]: Hi-hat")
+                #logger.debug("[DETECT AREA]: Hi-hat")
                 cv2.rectangle(img, (self.coord_hihat[0,0], self.coord_hihat[0,1]), (self.coord_hihat[1,0], self.coord_hihat[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "HIHAT", (self.coord_hihat[2,0], self.coord_hihat[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
                 if self.ifDrumSoundsOn:
                     self.drum_hihat.play()
             else:
-                logger.debug("[DETECT AREA]: Snare")
+                #logger.debug("[DETECT AREA]: Snare")
                 cv2.rectangle(img, (self.coord_snare[0,0], self.coord_snare[0,1]), (self.coord_snare[1,0], self.coord_snare[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "SNARE", (self.coord_snare[2,0], self.coord_snare[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
@@ -505,7 +504,7 @@ class AirDrums(object):
             # 2nd Column
             if (self.new_pt[item_num, 1] <= self.grid_y2):
                 
-                logger.debug("[DETECT AREA]: Tom1")
+                #logger.debug("[DETECT AREA]: Tom1")
                 cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
@@ -514,7 +513,7 @@ class AirDrums(object):
 
         else:
             if (self.new_pt[item_num, 1] <= self.grid_y1):
-                logger.debug("[DETECT AREA]: Ride")
+                #logger.debug("[DETECT AREA]: Ride")
                 cv2.rectangle(img, (self.coord_ride[0,0], self.coord_ride[0,1]), (self.coord_ride[1,0], self.coord_ride[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "RIDE", (self.coord_ride[2,0], self.coord_ride[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
@@ -522,14 +521,14 @@ class AirDrums(object):
                     self.drum_ride.play()
 
             elif (self.new_pt[item_num, 1] <= self.grid_y2):
-                logger.debug("[DETECT AREA]: Tom2")
+                #logger.debug("[DETECT AREA]: Tom2")
                 cv2.rectangle(img, (self.coord_tom2[0,0], self.coord_tom2[0,1]), (self.coord_tom2[1,0], self.coord_tom2[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "TOM2", (self.coord_tom2[2,0], self.coord_tom2[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
                 if self.ifDrumSoundsOn:
                     self.drum_tom2.play()
             else:
-                logger.debug("[DETECT AREA]: Floor")
+                #logger.debug("[DETECT AREA]: Floor")
                 cv2.rectangle(img, (self.coord_floor[0,0], self.coord_floor[0,1]), (self.coord_floor[1,0], self.coord_floor[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "FLOOR", (self.coord_floor[2,0], self.coord_floor[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
