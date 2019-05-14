@@ -20,8 +20,6 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger()
 
-
-
 class AirDrums(object):
     def __init__(self):
         # Frame details
@@ -34,24 +32,24 @@ class AirDrums(object):
         self.grid_y1 = 0
         self.grid_y2 = 0
         self.grid_color = (0, 255, 0)
-
+        
         # Kalman Filter
         self.kalman = cv2.KalmanFilter(4,2)
         self.kalman.measurementMatrix = np.array([[1,0,0,0],
-                                                [0,1,0,0]],np.float32)
+                                     [0,1,0,0]],np.float32)  
 
         self.kalman.transitionMatrix = np.array([[1,0,1,0],
-                                                [0,1,0,1],
-                                                [0,0,1,0],
-                                                [0,0,0,1]],np.float32)
+                                    [0,1,0,1],
+                                    [0,0,1,0],
+                                    [0,0,0,1]],np.float32) 
 
         self.kalman.processNoiseCov = np.array([[1,0,0,0],
-                                                [0,1,0,0],
-                                                [0,0,1,0],
-                                                [0,0,0,1]],np.float32) * 0.03
-
-        self.measurement = [[0,0], [0,0], [0,0]]
-        self.prediction = [[0,0], [0,0], [0,0]]
+                                   [0,1,0,0],
+                                   [0,0,1,0],
+                                   [0,0,0,1]],np.float32) * 0.03
+        
+        self.measurement = [[[0, 0]], [[0, 0]], [[0, 0]]]
+        self.prediction = [[[0, 0]], [[0, 0]], [[0, 0]]]
 
         # Patch sizes
         # Get 10x10 patch from center
@@ -61,18 +59,16 @@ class AirDrums(object):
         # RGB Calibration
         self.CALIBRATED = False
         # Left, right, bass
-        self.CALIBRATIONS = [0, 0, 0]
-        self.NUM_ITEMS = 2 # number of things to calibrate, 2 or 3
+        self.CALIBRATIONS = [0, 0]
 
-        self.blob_colors = [0, 0, 0]
-        self.min_rgb = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-        self.max_rgb = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        self.blob_colors = [0, 0]
+        self.min_rgb = np.array([[0, 0, 0], [0, 0, 0]])
+        self.max_rgb = np.array([[0, 0, 0], [0, 0, 0]])
 
         # Points detected
-        self.prev_pt_2 = np.array([[0, 0], [0, 0], [0, 0]])
-        self.prev_pt = np.array([[0, 0], [0, 0], [0, 0]])
-        self.new_pt = np.array([[0, 0], [0, 0], [0, 0]])
-        self.INIT_ITEM = [0,0, 0]
+        self.prev_pt = np.array([[0, 0], [0, 0]])
+        self.new_pt = np.array([[0, 0], [0, 0]])
+        self.INIT_ITEM = [0,0]
 
         # Velocities and accelerations
         self.velocities = [0, 0, 0]
@@ -110,7 +106,6 @@ class AirDrums(object):
 
         # Drum coordinates, upper left, lowerr right coordinates in [x, y]
         # 3rd coordinate is placement of drum name
-        # 4th coordinate is y coordinate for 50% area coverage
         self.coord_crash = np.array([[0, 0], [0, 0], [0, 0]])
         self.coord_hihat = np.array([[0, 0], [0, 0], [0, 0]])
         self.coord_snare = np.array([[0, 0], [0, 0], [0, 0]])
@@ -191,11 +186,8 @@ class AirDrums(object):
         self.drum_floor = pygame.mixer.Sound(self.directory_sound + "floor.wav")
 
 
-    def init_calibrate(self, num_items):
+    def init_calibrate(self):
         # Initialize calibrations
-
-        self.NUM_ITEMS = num_items
-
         self.frameCalibration()
         self.colorCalibrations()
 
@@ -217,50 +209,46 @@ class AirDrums(object):
         self.grid_y1 = int(0.33*self.frame_height)
         self.grid_y2 = int(0.66*self.frame_height)
 
-        self.grid_y1_5 = int(0.16*self.frame_height)
-        self.grid_y2_5 = int(0.48*self.frame_height)
-        self.grid_y3_5 = int(0.8*self.frame_height)
-
         # Initialize drum area bounding box coordinates
 
         # Left column of boxes
-        self.coord_crash[0,:] = [0, self.grid_y1_5]
+        self.coord_crash[0,:] = [0,0]
         self.coord_crash[1,:] = [self.grid_x1, self.grid_y1]
         self.coord_crash[2,:] = [((self.coord_crash[0,0] + self.coord_crash[1,0])/2) - 25, self.coord_crash[0,1] + 25]
 
-        self.coord_hihat[0,:] = [0, self.grid_y2_5]
+        self.coord_hihat[0,:] = [0, self.grid_y1]
         self.coord_hihat[1,:] = [self.grid_x1, self.grid_y2]
         self.coord_hihat[2,:] = [((self.coord_hihat[0,0] + self.coord_hihat[1,0])/2) - 25, self.coord_hihat[0,1] + 25]
 
 
-        self.coord_snare[0,:] = [0, self.grid_y3_5]
+        self.coord_snare[0,:] = [0,self.grid_y2]
         self.coord_snare[1,:] = [self.grid_x1, self.frame_height]
         self.coord_snare[2,:] = [((self.coord_snare[0,0] + self.coord_snare[1,0])/2) - 25, self.coord_snare[0,1] + 25]
 
 
         # Center column of boxes
-        self.coord_tom1[0,:] = [self.grid_x1, self.grid_y2_5]
+        self.coord_tom1[0,:] = [self.grid_x1, self.grid_y1]
         self.coord_tom1[1,:] = [self.grid_x2, self.grid_y2]
         self.coord_tom1[2,:] = [((self.coord_tom1[0,0] + self.coord_tom1[1,0])/2) - 25, self.coord_tom1[0,1] + 25]
 
 
-        self.coord_bass[0,:] = [self.grid_x1, self.grid_y3_5]
+        self.coord_bass[0,:] = [self.grid_x1, self.grid_y2]
         self.coord_bass[1,:] = [self.grid_x2, self.frame_height]
         self.coord_bass[2,:] = [((self.coord_bass[0,0] + self.coord_bass[1,0])/2) - 25, self.coord_bass[0,1] + 25]
 
 
         # Right column of boxes
-        self.coord_ride[0,:] = [self.grid_x2, self.grid_y1_5]
+        self.coord_ride[0,:] = [self.grid_x2, 0]
         self.coord_ride[1,:] = [self.frame_width, self.grid_y1]
         self.coord_ride[2,:] = [((self.coord_ride[0,0] + self.coord_ride[1,0])/2) - 25, self.coord_ride[0,1] + 25]
 
 
-        self.coord_tom2[0,:] = [self.grid_x2, self.grid_y2_5]
-        self.coord_tom2[1,:] = [self.frame_width, self.grid_y2]
+        self.coord_tom2[0,:] = [self.grid_x2, self.grid_y1]
+        self.coord_tom2[1,:] = [self.frame_width, self.grid_y1]
         self.coord_tom2[2,:] = [((self.coord_tom2[0,0] + self.coord_tom2[1,0])/2) - 25, self.coord_tom2[0,1] + 25]
 
 
-        self.coord_floor[0,:] = [self.grid_x2, self.grid_y3_5]
+        self.coord_floor[0,:] = [self.grid_x2, self.grid_y2]
         self.coord_floor[1,:] = [self.frame_width, self.frame_height]
         self.coord_floor[2,:] = [((self.coord_floor[0,0] + self.coord_floor[1,0])/2) - 25, self.coord_floor[0,1] + 25]
 
@@ -285,8 +273,14 @@ class AirDrums(object):
         '''
             Computes the color calibrations for the left and right sticks
         '''
-        for i in range(self.NUM_ITEMS):
-            item = self.DRUM_ITEMS[i]
+
+        for i, val in enumerate(self.CALIBRATIONS):
+            if i == 0:
+                item = "Left Stick"
+            elif i == 1:
+                item = "Right Stick"
+            else:
+                item = "Bass Knee"
 
             while True:
                 ret_val, img = self.cam.read()
@@ -323,12 +317,11 @@ class AirDrums(object):
             The main mode of AirDrums
         '''
         # Start the blob detection
-        otherFrame = 0
-        img_counter = 0
+        otherFrame = 1
         while True:
             ret_val, img = self.cam.read()
 
-            if otherFrame <= 0:
+            if otherFrame == 1:
 
                 img = cv2.flip(img, 1)
 
@@ -341,7 +334,7 @@ class AirDrums(object):
 
 
                 # Find centroids for all blobs to be detected
-                for i in range(self.NUM_ITEMS):
+                for i, val in enumerate(self.CALIBRATIONS):
                     self.centroidDetection(img, i)
 
                 # Calculate dynamics for all blobs
@@ -350,25 +343,15 @@ class AirDrums(object):
 
                 # Check what drum pad was triggered
                 for i, val in enumerate(self.CALIBRATIONS):
-                     self.detectTriggerThruDynamics(img, i)
-
-                #for i in range(2):
-                #    self.detectTriggerThruArea(img, i)
-
-                # include bass drum
-                self.detectBassTrigger(img, self.NUM_ITEMS)
+                    self.detectTriggerThruDynamics(img, i)
 
                 end = time.time()
-                time_elapsed = end - start
-                #logger.debug("Seconds elapsed: {}".format(time_elapsed))
+                #logger.debug("Seconds elapsed: {}".format(end-start))
                 cv2.imshow("AirDrums: Centroid", img)
-                img_name = "frame_{}_{}.jpg".format(img_counter, time_elapsed)
-                #cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
-                img_counter = img_counter + 1
 
                 otherFrame = 0
             else:
-                otherFrame = otherFrame - 1
+                otherFrame = 1
 
 
             if cv2.waitKey(1) == 27: 
@@ -396,30 +379,10 @@ class AirDrums(object):
         '''
             Draw grid on every frame
         '''
-        # cv2.line(img, (self.grid_x1, 0), (self.grid_x1, self.frame_height), self.grid_color, 1, 1)
-        # cv2.line(img, (self.grid_x2, 0), (self.grid_x2, self.frame_height), self.grid_color, 1, 1)
-        # cv2.line(img, (0, self.grid_y1), (self.frame_width, self.grid_y1), self.grid_color, 1, 1)
-        # cv2.line(img, (0, self.grid_y2), (self.frame_width, self.grid_y2), self.grid_color, 1, 1)
-
-
-        # # For 50%
-        # cv2.line(img, (0, self.grid_y1_5), (self.frame_width, self.grid_y1_5), self.drum_color_2, 1, 1)
-        # cv2.line(img, (0, self.grid_y2_5), (self.frame_width, self.grid_y2_5), self.drum_color_2, 1, 1)
-        # cv2.line(img, (0, self.grid_y3_5), (self.frame_width, self.grid_y3_5), self.drum_color_2, 1, 1)
-
-
-        cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_1, 2)
-        cv2.rectangle(img, (self.coord_hihat[0,0], self.coord_hihat[0,1]), (self.coord_hihat[1,0], self.coord_hihat[1,1]), self.drum_color_1, 2)
-        cv2.rectangle(img, (self.coord_snare[0,0], self.coord_snare[0,1]), (self.coord_snare[1,0], self.coord_snare[1,1]), self.drum_color_1, 2)
-
-
-        cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_1, 2)
-        cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_1, 2)
-
-        cv2.rectangle(img, (self.coord_ride[0,0], self.coord_ride[0,1]), (self.coord_ride[1,0], self.coord_ride[1,1]), self.drum_color_1, 2)
-        cv2.rectangle(img, (self.coord_tom2[0,0], self.coord_tom2[0,1]), (self.coord_tom2[1,0], self.coord_tom2[1,1]), self.drum_color_1, 2)
-        cv2.rectangle(img, (self.coord_floor[0,0], self.coord_floor[0,1]), (self.coord_floor[1,0], self.coord_floor[1,1]), self.drum_color_1, 2)
-
+        cv2.line(img, (self.grid_x1, 0), (self.grid_x1, self.frame_height), self.grid_color, 1, 1)
+        cv2.line(img, (self.grid_x2, 0), (self.grid_x2, self.frame_height), self.grid_color, 1, 1)
+        cv2.line(img, (0, self.grid_y1), (self.frame_width, self.grid_y1), self.grid_color, 1, 1)
+        cv2.line(img, (0, self.grid_y2), (self.frame_width, self.grid_y2), self.grid_color, 1, 1)
 
 
 
@@ -448,11 +411,6 @@ class AirDrums(object):
 
         # Find max contour
         # Check if no contours detected
-
-        self.prev_pt_2[item_num, 0] = self.prev_pt[item_num, 0]
-        self.prev_pt_2[item_num, 1] = self.prev_pt[item_num, 1]
-        self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
-        self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
         if (len(c_areas) != 0):
             max_c_area_index = c_areas.index(max(c_areas))
             #logger.debug(max_c_area_index)
@@ -461,23 +419,20 @@ class AirDrums(object):
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
 
-
-            self.new_pt[item_num, 0] = cX
-            self.new_pt[item_num, 1] = cY
             # Check if there was detected pt in prev. frame
-            # if self.INIT_ITEM[item_num] == 0:
-            #     # No detected contour in prev frame
-            #     self.INIT_ITEM[item_num] = 1
-            #     self.new_pt[item_num, 0] = cX
-            #     self.new_pt[item_num, 1] = cY
-            #     self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
-            #     self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
+            if self.INIT_ITEM[item_num] == 0:
+                # No detected contour in prev frame
+                self.INIT_ITEM[item_num] = 1
+                self.new_pt[item_num, 0] = cX
+                self.new_pt[item_num, 1] = cY
+                self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
+                self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
 
-            # else:
-            #     self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
-            #     self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
-            #     self.new_pt[item_num, 0] = cX
-            #     self.new_pt[item_num, 1] = cY
+            else:
+                self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
+                self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
+                self.new_pt[item_num, 0] = cX
+                self.new_pt[item_num, 1] = cY
 
             end = time.time()
             #logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
@@ -487,14 +442,8 @@ class AirDrums(object):
 
 
         else:
-            # No contours detected so set new pt to 0
             self.INIT_ITEM[item_num] = 0
-            self.new_pt[item_num, 0] = 0
-            self.new_pt[item_num, 1] = 0
-            #self.prev_pt[item_num, 0] = 0
-            #self.prev_pt[item_num, 1] = 0
             #INIT_LEFT = 0
-
 
 
     def calculateDynamics(self, img, item_num):
@@ -503,19 +452,15 @@ class AirDrums(object):
         # Calculate dynamics given prev pt and new pt
         #logger.debug(self.new_pt[item_num])
         #logger.debug(self.prev_pt[item_num])
-
-        # kalman filter predictions
+        
+        # kalman filter prediction
         self.measurement[item_num] = np.array(self.new_pt[item_num],np.float32)
         self.kalman.correct(self.measurement[item_num])
-        self.prediction[item_num] = self.kalman.predict().reshape(-1,2)[0]
-        self.new_pt[item_num] = self.prediction[item_num]
-
-        dist = np.linalg.norm(self.new_pt[item_num]-self.prev_pt[item_num])
+        self.prediction[item_num] = self.kalman.predict().reshape(-1,2)
+        
+        dist = np.linalg.norm(self.prediction[item_num]-self.prev_pt[item_num])
         self.velocities[item_num] = dist/self.DELTA_T
-        print('prev velocity: ', self.prev_velocities[item_num])
-        print('new velocity: ', self.velocities[item_num])
         self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
-        print('acceleration: ',self.accelerations[item_num])
         self.dir_vertical[item_num] = self.new_pt[item_num,1] - self.prev_pt[item_num,1]
         self.dir_horizontal[item_num] = self.new_pt[item_num,0] - self.prev_pt[item_num,0]
         self.prev_velocities[item_num] = self.velocities[item_num]
@@ -541,9 +486,8 @@ class AirDrums(object):
             #logger.debug("[LEFT&RIGHT: CALCULATE DYNAMICS]")
 
             #logger.debug('flags: %d'%self.flags[item_num])
-            logger.debug('accelerations: %.2f'%self.accelerations[item_num])
             # Triggered!
-            if (self.accelerations[item_num] < -10000) and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+            if (self.accelerations[item_num] < -20000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
                 logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
                 self.flags[item_num] = 5
 
@@ -553,6 +497,7 @@ class AirDrums(object):
         #else:
             # For bass drum
             #logger.debug("[BASS DRUM: CALCULATE DYNAMICS]")
+            
 
     def detectArea(self, img, item_num):
         '''
@@ -589,6 +534,7 @@ class AirDrums(object):
         elif (self.new_pt[item_num, 0] <= self.grid_x2):
             # 2nd Column
             if (self.new_pt[item_num, 1] <= self.grid_y2):
+                
                 #logger.debug("[DETECT AREA]: Tom1")
                 cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
                 cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
@@ -623,7 +569,7 @@ class AirDrums(object):
 
 
 
-    def detectTriggerThruArea(self, img, item_num):
+    def detectTriggerThruArea(self, item_num):
         '''
             Detect trigger thru lower half and upper half of each area
             0 - Left, 1 - Right, 2 - Bass
@@ -631,161 +577,12 @@ class AirDrums(object):
             If previous point was from the upper half of the area, and new pt is in lower half
             Means strike
         '''
-
-
-
-        if (self.new_pt[item_num, 0] == 0) and (self.new_pt[item_num, 1] == 0):
-            return
-
-
-
-        mod_prev_pt = None
-        if (self.prev_pt[item_num, 0] == 0) and (self.prev_pt[item_num,1] == 0):
-            if (self.prev_pt_2[item_num, 0] == 0) and (self.prev_pt_2[item_num,1] == 0):
-                return
-            else:
-                mod_prev_pt = self.prev_pt_2
-        else:
-            mod_prev_pt = self.prev_pt
-
-
-        # Check for left and right sticks
-        # For first column
-        if (self.new_pt[item_num, 0] <= self.grid_x1):
-            if (self.new_pt[item_num, 1] <= self.grid_y1) and (self.new_pt[item_num, 1] >= self.grid_y1_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y1_5)):
-                    #logger.debug("[DETECT AREA]: Crash")
-                    cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_crash.play()
-
-            elif (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y2_5) and (mod_prev_pt[item_num, 1] >= self.grid_y1_5)):
-
-                    #logger.debug("[DETECT AREA]: Hi-hat")
-                    cv2.rectangle(img, (self.coord_hihat[0,0], self.coord_hihat[0,1]), (self.coord_hihat[1,0], self.coord_hihat[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "HIHAT", (self.coord_hihat[2,0], self.coord_hihat[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_hihat.play()
-            elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y3_5) and (mod_prev_pt[item_num, 1] >= self.grid_y2_5)):
-
-                    #logger.debug("[DETECT AREA]: Snare")
-                    #logger.debug("prev_pt: {}".format(mod_prev_pt[item_num]))
-                    #logger.debug("new_pt: {}".format(self.new_pt[item_num]))
-
-                    cv2.rectangle(img, (self.coord_snare[0,0], self.coord_snare[0,1]), (self.coord_snare[1,0], self.coord_snare[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "SNARE", (self.coord_snare[2,0], self.coord_snare[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_snare.play()
-
-        elif (self.new_pt[item_num, 0] <= self.grid_x2) and (self.new_pt[item_num,0] > self.grid_x1):
-            # 2nd Column
-            if (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y2_5) and (mod_prev_pt[item_num, 1] >= self.grid_y1_5)):
-
-                    #logger.debug("[DETECT AREA]: Tom1")
-                    cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_tom1.play()
-
-        elif (self.new_pt[item_num, 0] >= self.grid_x2):
-            # for 3rd column
-            if (self.new_pt[item_num, 1] <= self.grid_y1) and (self.new_pt[item_num, 1] >= self.grid_y1_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y1_5)):
-
-                    #logger.debug("[DETECT AREA]: Ride")
-                    cv2.rectangle(img, (self.coord_ride[0,0], self.coord_ride[0,1]), (self.coord_ride[1,0], self.coord_ride[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "RIDE", (self.coord_ride[2,0], self.coord_ride[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_ride.play()
-
-            elif (self.new_pt[item_num, 1] <= self.grid_y2) and (self.new_pt[item_num, 1] >= self.grid_y2_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y2_5)):
-
-                    #logger.debug("[DETECT AREA]: Tom2")
-                    cv2.rectangle(img, (self.coord_tom2[0,0], self.coord_tom2[0,1]), (self.coord_tom2[1,0], self.coord_tom2[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "TOM2", (self.coord_tom2[2,0], self.coord_tom2[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_tom2.play()
-            elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
-                if ((mod_prev_pt[item_num, 1]<= self.grid_y3_5)):
-
-                    #logger.debug("[DETECT AREA]: Floor")
-                    cv2.rectangle(img, (self.coord_floor[0,0], self.coord_floor[0,1]), (self.coord_floor[1,0], self.coord_floor[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "FLOOR", (self.coord_floor[2,0], self.coord_floor[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_floor.play()
-
-
-    def detectBassTrigger(self, img, NUM_ITEMS):
-        '''
-            Case for detecting if bass was triggered
-        '''
-
-        #logger.debug("[DETECT BASS TRIGGER]")
-        item_num = 2
-
-        if (NUM_ITEMS == 3):
-
-
-            self.calculateDynamics(img, item_num)
-
-            if (self.accelerations[item_num] < -5000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
-                #logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
-                self.flags[item_num] = 2
-
-                # Detect which area was triggered
-                #self.detectArea(img,item_num)
-
-                # Check if bass area was triggered
-                if (self.new_pt[item_num, 0] <= self.coord_bass[1,0]) and (self.new_pt[item_num,0] >= self.coord_bass[0, 0]) and (self.new_pt[item_num, 1] <= self.coord_bass[1,1]) and (self.new_pt[item_num, 1] >= self.coord_bass[0, 1]):
-                    #logger.debug("[DETECT AREA]: Bass")
-                    cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_2, 2)
-                    cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                    if self.ifDrumSoundsOn:
-                        self.drum_bass.play()
-        else:
-            if (self.new_pt[item_num, 0] == 0) and (self.new_pt[item_num, 1] == 0):
-                return
-
-            mod_prev_pt = None
-            if (self.prev_pt[item_num, 0] == 0) and (self.prev_pt[item_num,1] == 0):
-                if (self.prev_pt_2[item_num, 0] == 0) and (self.prev_pt_2[item_num,1] == 0):
-                    return
-                else:
-                    mod_prev_pt = self.prev_pt_2
-            else:
-                mod_prev_pt = self.prev_pt
-
-            if (self.new_pt[item_num, 0] <= self.grid_x2) and (self.new_pt[item_num,0] > self.grid_x1):
-                # 2nd Column
-                if (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
-                    if ((mod_prev_pt[item_num, 1]<= self.grid_y3_5) and (mod_prev_pt[item_num, 1] >= self.grid_y2_5)):
-                        #logger.debug("[DETECT AREA]: Bass")
-                        cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_2, 2)
-                        cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-
-                        if self.ifDrumSoundsOn:
-                            self.drum_bass.play()
-
-
+        # if (item_num != 2):
+        #     Check if in drum locations
 
 if __name__ == '__main__':
     drums = AirDrums()
     # Comment out below line to remove drum sounds
     drums.init_drum_sounds()
-    # 2 - for two sticks
-    # 3 - for two sticks, and bass
-    drums.init_calibrate(3)
+    drums.init_calibrate()
     drums.playDrums()

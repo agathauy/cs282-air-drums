@@ -33,6 +33,23 @@ class AirDrums(object):
         self.grid_y2 = 0
         self.grid_color = (0, 255, 0)
         
+        # Kalman Filter
+        self.kalman = cv2.KalmanFilter(4,2)
+        self.kalman.measurementMatrix = np.array([[1,0,0,0],
+                                     [0,1,0,0]],np.float32)  
+
+        self.kalman.transitionMatrix = np.array([[1,0,1,0],
+                                    [0,1,0,1],
+                                    [0,0,1,0],
+                                    [0,0,0,1]],np.float32) 
+
+        self.kalman.processNoiseCov = np.array([[1,0,0,0],
+                                   [0,1,0,0],
+                                   [0,0,1,0],
+                                   [0,0,0,1]],np.float32) * 0.03
+        
+        self.measurement = [[[0, 0]], [[0, 0]], [[0, 0]]]
+        self.prediction = [[[0, 0]], [[0, 0]], [[0, 0]]]
 
         # Patch sizes
         # Get 10x10 patch from center
@@ -329,7 +346,7 @@ class AirDrums(object):
                     self.detectTriggerThruDynamics(img, i)
 
                 end = time.time()
-                logger.debug("Seconds elapsed: {}".format(end-start))
+                #logger.debug("Seconds elapsed: {}".format(end-start))
                 cv2.imshow("AirDrums: Centroid", img)
 
                 otherFrame = 0
@@ -435,7 +452,13 @@ class AirDrums(object):
         # Calculate dynamics given prev pt and new pt
         #logger.debug(self.new_pt[item_num])
         #logger.debug(self.prev_pt[item_num])
-        dist = np.linalg.norm(self.new_pt[item_num]-self.prev_pt[item_num])
+        
+        # kalman filter prediction
+        self.measurement[item_num] = np.array(self.new_pt[item_num],np.float32)
+        self.kalman.correct(self.measurement[item_num])
+        self.prediction[item_num] = self.kalman.predict().reshape(-1,2)
+        
+        dist = np.linalg.norm(self.prediction[item_num]-self.prev_pt[item_num])
         self.velocities[item_num] = dist/self.DELTA_T
         self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
         self.dir_vertical[item_num] = self.new_pt[item_num,1] - self.prev_pt[item_num,1]
@@ -464,16 +487,16 @@ class AirDrums(object):
 
             #logger.debug('flags: %d'%self.flags[item_num])
             # Triggered!
-            if (self.accelerations[item_num] < -5000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+            if (self.accelerations[item_num] < -20000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
                 logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
-                self.flags[item_num] = 2
+                self.flags[item_num] = 5
 
                 # Detect which area was triggered
                 self.detectArea(img,item_num)
 
-        else:
+        #else:
             # For bass drum
-            logger.debug("[BASS DRUM: CALCULATE DYNAMICS]")
+            #logger.debug("[BASS DRUM: CALCULATE DYNAMICS]")
             
 
     def detectArea(self, img, item_num):

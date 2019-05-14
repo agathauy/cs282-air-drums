@@ -4,6 +4,24 @@ import numpy as np
 
 cap = cv2.VideoCapture(0)
 
+# Kalman Filter parameters
+kalman = cv2.KalmanFilter(4,2)
+kalman.measurementMatrix = np.array([[1,0,0,0],
+                                     [0,1,0,0]],np.float32)
+
+kalman.transitionMatrix = np.array([[1,0,1,0],
+                                    [0,1,0,1],
+                                    [0,0,1,0],
+                                    [0,0,0,1]],np.float32)
+
+kalman.processNoiseCov = np.array([[1,0,0,0],
+                                   [0,1,0,0],
+                                   [0,0,1,0],
+                                   [0,0,0,1]],np.float32) * 0.03
+
+measurement = np.array((2,1), np.float32)
+prediction = np.zeros((2,1), np.float32)
+
 # Calculate FPS
 num_frames = 120
 start = time.time()
@@ -34,7 +52,7 @@ cv2.namedWindow("Frame")
 cv2.setMouseCallback("Frame", select_point)
 point_selected = False
 point = ()
-old_points = np.array([[]])
+#old_points = np.array([[]])
 while True:
     start = time.time()
     _, frame = cap.read()
@@ -43,12 +61,18 @@ while True:
         cv2.circle(frame, point, 5, (0, 0, 255), 2)
         new_points, status, error = cv2.calcOpticalFlowPyrLK(old_gray, gray_frame, old_points, None, **lk_params)
         dt = 1/FPS
-        dy = new_points[0,1] - old_points[0,1]
-        dx = new_points[0,0] - old_points[0,0]
-        vy = dy/dt
-        vx = dx/dt
-        print('vy: %.2f'%vy)
+        #vxinit = new_points[0,0] - old_points[0,0]
+        #vyinit = new_points[0,1] - old_points[0,1]
+        #dx = new_points[0,0] - old_points[0,0]
+        #vy = dy/dt
+        #vx = dx/dt
+        #print('vy: %.2f'%vy)
         #print('vx: %.2f'%vx)
+        measurement = new_points[0]
+        kalman.correct(measurement)
+        prediction = kalman.predict()
+        print('measurement: ', measurement)
+        print('prediction: ', prediction)
         old_gray = gray_frame.copy()
         old_points = new_points
         x, y = new_points.ravel()
