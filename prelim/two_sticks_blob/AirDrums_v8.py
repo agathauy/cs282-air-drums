@@ -35,6 +35,23 @@ class AirDrums(object):
         self.grid_y2 = 0
         self.grid_color = (0, 255, 0)
 
+        # Kalman Filter
+        self.kalman = cv2.KalmanFilter(4,2)
+        self.kalman.measurementMatrix = np.array([[1,0,0,0],
+                                                [0,1,0,0]],np.float32)
+
+        self.kalman.transitionMatrix = np.array([[1,0,1,0],
+                                                [0,1,0,1],
+                                                [0,0,1,0],
+                                                [0,0,0,1]],np.float32)
+
+        self.kalman.processNoiseCov = np.array([[1,0,0,0],
+                                                [0,1,0,0],
+                                                [0,0,1,0],
+                                                [0,0,0,1]],np.float32) * 0.03
+
+        self.measurement = [[0,0], [0,0], [0,0]]
+        self.prediction = [[0,0], [0,0], [0,0]]
 
         # Patch sizes
         # Get 10x10 patch from center
@@ -336,7 +353,7 @@ class AirDrums(object):
                 #     self.detectTriggerThruDynamics(img, i)
 
                 for i in range(2):
-                    self.detectTriggerThruArea(img, i)
+                    self.detectTriggerThruDynamics(img, i)
 
                 # include bass drum
                 self.detectBassTrigger(img, self.NUM_ITEMS)
@@ -486,6 +503,15 @@ class AirDrums(object):
         # Calculate dynamics given prev pt and new pt
         logger.debug(self.new_pt[item_num])
         logger.debug(self.prev_pt[item_num])
+
+        # kalman filter predictions
+        self.measurement[item_num] = np.array(self.new_pt[item_num],np.float32)
+        print('measure: ',self.measurement[item_num])
+        self.kalman.correct(self.measurement[item_num])
+        self.prediction[item_num] = self.kalman.predict().reshape(-1,2)[0]
+        print('hello: ',self.prediction[item_num])
+        self.new_pt[item_num] = self.prediction[item_num]
+
         dist = np.linalg.norm(self.new_pt[item_num]-self.prev_pt[item_num])
         self.velocities[item_num] = dist/self.DELTA_T
         self.accelerations[item_num]= (self.velocities[item_num] - self.prev_velocities[item_num])/self.DELTA_T
@@ -759,5 +785,5 @@ if __name__ == '__main__':
     drums.init_drum_sounds()
     # 2 - for two sticks
     # 3 - for two sticks, and bass
-    drums.init_calibrate(2)
+    drums.init_calibrate(3)
     drums.playDrums()
