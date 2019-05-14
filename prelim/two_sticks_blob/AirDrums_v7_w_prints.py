@@ -325,7 +325,7 @@ class AirDrums(object):
 
                 # Find centroids for all blobs to be detected
                 for i in range(self.NUM_ITEMS):
-                    self.centroidDetection(img, i)
+                    self.centroidDetection(img, i, img_counter)
 
                 # Calculate dynamics for all blobs
                 #for i, val in enumerate(self.CALIBRATIONS):
@@ -406,7 +406,7 @@ class AirDrums(object):
 
 
 
-    def centroidDetection(self, img, item_num):
+    def centroidDetection(self, img, item_num, img_counter):
         '''
             Detects the centroid of a given item
         '''
@@ -416,9 +416,12 @@ class AirDrums(object):
         start = time.time()
         # Detect for blob
         maskLAB = cv2.inRange(img, self.min_rgb[item_num], self.max_rgb[item_num])
+        img_name = "thresholds_{}.jpg".format(img_counter)
+        cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
         kernel = np.ones((10,10),np.uint8)
         dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
-
+        img_name = "dilation_{}.jpg".format(img_counter)
+        cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
 
         im2, contours, hierarchy = cv2.findContours(dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         height,width = dilation.shape[:2]
