@@ -188,10 +188,14 @@ class AirDrums(object):
 
     def init_calibrate(self):
         # Initialize calibrations
-        self.frameCalibration()
+
+        self.NUM_ITEMS = num_items
+
+        self.frameCalibration_v1()
         self.colorCalibrations()
 
-    def frameCalibration(self):
+
+    def frameCalibration_v1(self):
         '''
             Calculate initial FPS
             Also initialize frames and drum coordinates
@@ -203,6 +207,85 @@ class AirDrums(object):
         self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
         #logger.debug("width: {}, height: {}".format(self.frame_width, self.frame_height))
+
+        self.grid_x1 = int(0.33*self.frame_width)
+        self.grid_x2 = int(0.66*self.frame_width)
+        self.grid_y1 = int(0.33*self.frame_height)
+        self.grid_y2 = int(0.66*self.frame_height)
+
+        # Initialize drum area bounding box coordinates
+
+        # Left column of boxes
+        self.coord_crash[0,:] = [0,0]
+        self.coord_crash[1,:] = [self.grid_x1, self.grid_y1]
+        self.coord_crash[2,:] = [((self.coord_crash[0,0] + self.coord_crash[1,0])/2) - 25, self.coord_crash[0,1] + 25]
+
+        self.coord_hihat[0,:] = [0, self.grid_y1]
+        self.coord_hihat[1,:] = [self.grid_x1, self.grid_y2]
+        self.coord_hihat[2,:] = [((self.coord_hihat[0,0] + self.coord_hihat[1,0])/2) - 25, self.coord_hihat[0,1] + 25]
+
+
+        self.coord_snare[0,:] = [0,self.grid_y2]
+        self.coord_snare[1,:] = [self.grid_x1, self.frame_height]
+        self.coord_snare[2,:] = [((self.coord_snare[0,0] + self.coord_snare[1,0])/2) - 25, self.coord_snare[0,1] + 25]
+
+
+        # Center column of boxes
+        self.coord_tom1[0,:] = [self.grid_x1, self.grid_y1]
+        self.coord_tom1[1,:] = [self.grid_x2, self.grid_y2]
+        self.coord_tom1[2,:] = [((self.coord_tom1[0,0] + self.coord_tom1[1,0])/2) - 25, self.coord_tom1[0,1] + 25]
+
+
+        self.coord_bass[0,:] = [self.grid_x1, self.grid_y2]
+        self.coord_bass[1,:] = [self.grid_x2, self.frame_height]
+        self.coord_bass[2,:] = [((self.coord_bass[0,0] + self.coord_bass[1,0])/2) - 25, self.coord_bass[0,1] + 25]
+
+
+        # Right column of boxes
+        self.coord_ride[0,:] = [self.grid_x2, 0]
+        self.coord_ride[1,:] = [self.frame_width, self.grid_y1]
+        self.coord_ride[2,:] = [((self.coord_ride[0,0] + self.coord_ride[1,0])/2) - 25, self.coord_ride[0,1] + 25]
+
+
+        self.coord_tom2[0,:] = [self.grid_x2, self.grid_y1]
+        self.coord_tom2[1,:] = [self.frame_width, self.grid_y1]
+        self.coord_tom2[2,:] = [((self.coord_tom2[0,0] + self.coord_tom2[1,0])/2) - 25, self.coord_tom2[0,1] + 25]
+
+
+        self.coord_floor[0,:] = [self.grid_x2, self.grid_y2]
+        self.coord_floor[1,:] = [self.frame_width, self.frame_height]
+        self.coord_floor[2,:] = [((self.coord_floor[0,0] + self.coord_floor[1,0])/2) - 25, self.coord_floor[0,1] + 25]
+
+
+
+
+        # Calculate FPS
+        num_frames = 30
+        start = time.time()
+        for i in range(num_frames):
+            ret, frame = self.cam.read()
+        end = time.time()
+        seconds = end - start
+        self.FPS = 30
+        #self.FPS = num_frames / seconds
+        self.DELTA_T = 1/self.FPS
+        #logger.debug('FPS: %.2f'%self.FPS)
+        #logger.debug('DELTA_T: %.2f'%self.DELTA_T)
+
+
+
+    def frameCalibration_v2(self):
+        '''
+            Calculate initial FPS
+            Also initialize frames and drum coordinates
+        '''
+        self.cam = cv2.VideoCapture(0)
+        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
+        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
+
+        self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        logger.debug("width: {}, height: {}".format(self.frame_width, self.frame_height))
 
         self.grid_x1 = int(0.33*self.frame_width)
         self.grid_x2 = int(0.66*self.frame_width)

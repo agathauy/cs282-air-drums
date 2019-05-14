@@ -345,7 +345,7 @@ class AirDrums(object):
                 time_elapsed = end - start
                 logger.debug("Seconds elapsed: {}".format(time_elapsed))
                 cv2.imshow("AirDrums: Centroid", img)
-                img_name = "frame_{}_{}.jpg".format(img_counter, time_elapsed)
+                img_name = "frame_{}.jpg".format(img_counter)
                 cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
                 img_counter = img_counter + 1
 
@@ -416,11 +416,11 @@ class AirDrums(object):
         start = time.time()
         # Detect for blob
         maskLAB = cv2.inRange(img, self.min_rgb[item_num], self.max_rgb[item_num])
-        img_name = "thresholds_{}.jpg".format(img_counter)
-        cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
+        img_name = "thresholds_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
+        cv2.imwrite("./AirDrums_v7_data/" + img_name, maskLAB)
         kernel = np.ones((10,10),np.uint8)
         dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
-        img_name = "dilation_{}.jpg".format(img_counter)
+        img_name = "dilation_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
         cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
 
         im2, contours, hierarchy = cv2.findContours(dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -762,5 +762,5 @@ if __name__ == '__main__':
     drums.init_drum_sounds()
     # 2 - for two sticks
     # 3 - for two sticks, and bass
-    drums.init_calibrate(2)
+    drums.init_calibrate(3)
     drums.playDrums()
