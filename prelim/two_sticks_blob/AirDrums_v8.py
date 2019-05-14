@@ -186,7 +186,7 @@ class AirDrums(object):
         self.drum_floor = pygame.mixer.Sound(self.directory_sound + "floor.wav")
 
 
-    def init_calibrate(self):
+    def init_calibrate(self, num_items):
         # Initialize calibrations
 
         self.NUM_ITEMS = num_items
@@ -667,5 +667,5 @@ if __name__ == '__main__':
     drums = AirDrums()
     # Comment out below line to remove drum sounds
     drums.init_drum_sounds()
-    drums.init_calibrate()
+    drums.init_calibrate(3)
     drums.playDrums()
