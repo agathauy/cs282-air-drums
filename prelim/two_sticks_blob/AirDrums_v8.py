@@ -576,7 +576,7 @@ class AirDrums(object):
 
             #logger.debug('flags: %d'%self.flags[item_num])
             # Triggered!
-            if (self.accelerations[item_num] < -20000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
+            if (self.accelerations[item_num] < -10000)  and (self.dir_vertical[item_num] > 0) and (self.flags[item_num] < 0):
                 logger.debug('Acceleration: {} pixels/second'.format(self.accelerations[item_num]))
                 self.flags[item_num] = 5
 
