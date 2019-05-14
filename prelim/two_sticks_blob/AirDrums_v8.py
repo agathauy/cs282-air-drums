@@ -401,6 +401,8 @@ class AirDrums(object):
         '''
         # Start the blob detection
         otherFrame = 1
+        img_counter = 0
+
         while True:
             ret_val, img = self.cam.read()
 
@@ -430,7 +432,11 @@ class AirDrums(object):
 
                 end = time.time()
                 #logger.debug("Seconds elapsed: {}".format(end-start))
-                cv2.imshow("AirDrums: Centroid", img)
+                cv2.imshow("AirDrums", img)
+
+                img_name = "frame_{}.jpg".format(img_counter)
+                cv2.imwrite("./AirDrums_v8_data/" + img_name, img)
+                img_counter = img_counter + 1
 
                 otherFrame = 0
             else:

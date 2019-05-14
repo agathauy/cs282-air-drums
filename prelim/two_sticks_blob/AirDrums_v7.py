@@ -188,8 +188,9 @@ class AirDrums(object):
             Also initialize frames and drum coordinates
         '''
         self.cam = cv2.VideoCapture(0)
-        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
-        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
+        if self.frame_width_default != 0:
+            self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
+            self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
 
         self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -344,10 +345,10 @@ class AirDrums(object):
                 end = time.time()
                 time_elapsed = end - start
                 logger.debug("Seconds elapsed: {}".format(time_elapsed))
-                cv2.imshow("AirDrums: Centroid", img)
-                img_name = "frame_{}.jpg".format(img_counter)
-                cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
-                img_counter = img_counter + 1
+                cv2.imshow("AirDrums", img)
+                #img_name = "frame_{}.jpg".format(img_counter)
+                #cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
+                #img_counter = img_counter + 1
 
                 otherFrame = 0
             else:
@@ -416,12 +417,12 @@ class AirDrums(object):
         start = time.time()
         # Detect for blob
         maskLAB = cv2.inRange(img, self.min_rgb[item_num], self.max_rgb[item_num])
-        img_name = "thresholds_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
-        cv2.imwrite("./AirDrums_v7_data/" + img_name, maskLAB)
+        #img_name = "thresholds_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
+        #cv2.imwrite("./AirDrums_v7_data/" + img_name, maskLAB)
         kernel = np.ones((10,10),np.uint8)
         dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
-        img_name = "dilation_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
-        cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
+        #img_name = "dilation_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
+        #cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
 
         im2, contours, hierarchy = cv2.findContours(dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         height,width = dilation.shape[:2]

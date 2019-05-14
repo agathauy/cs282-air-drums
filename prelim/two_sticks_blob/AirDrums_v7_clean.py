@@ -188,8 +188,9 @@ class AirDrums(object):
             Also initialize frames and drum coordinates
         '''
         self.cam = cv2.VideoCapture(0)
-        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
-        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
+        if self.frame_width_default != 0:
+            self.cam.set(cv2.CAP_PROP_FRAME_WIDTH,self.frame_width_default)
+            self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT,self.frame_height_default)
 
         self.frame_width = int(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -345,9 +346,9 @@ class AirDrums(object):
                 time_elapsed = end - start
                 logger.debug("Seconds elapsed: {}".format(time_elapsed))
                 cv2.imshow("AirDrums: Centroid", img)
-                img_name = "frame_{}.jpg".format(img_counter)
-                cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
-                img_counter = img_counter + 1
+                #img_name = "frame_{}.jpg".format(img_counter)
+                #cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
+                #img_counter = img_counter + 1
 
                 otherFrame = 0
             else:
@@ -416,25 +417,17 @@ class AirDrums(object):
         start = time.time()
         # Detect for blob
         maskLAB = cv2.inRange(img, self.min_rgb[item_num], self.max_rgb[item_num])
-        img_name = "thresholds_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
-        cv2.imwrite("./AirDrums_v7_data/" + img_name, maskLAB)
         kernel = np.ones((10,10),np.uint8)
         dilation = cv2.dilate(maskLAB,kernel,iterations = 1)
-        img_name = "dilation_{}_{}.jpg".format(self.DRUM_ITEMS[item_num], img_counter)
-        cv2.imwrite("./AirDrums_v7_data/" + img_name, dilation)
-
         im2, contours, hierarchy = cv2.findContours(dilation,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         height,width = dilation.shape[:2]
-        #img = np.zeros((height,width,3), np.uint8)
         c_areas = []
 
         for c in contours:
             c_area = cv2.contourArea(c)
             c_areas.append(c_area)
 
-        # Find max contour
-        # Check if no contours detected
-
+        # Find max contour, Check if no contours detected
         self.prev_pt_2[item_num, 0] = self.prev_pt[item_num, 0]
         self.prev_pt_2[item_num, 1] = self.prev_pt[item_num, 1]
         self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
@@ -446,40 +439,19 @@ class AirDrums(object):
             M = cv2.moments(contours[max_c_area_index])
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
-
-
             self.new_pt[item_num, 0] = cX
             self.new_pt[item_num, 1] = cY
-            # Check if there was detected pt in prev. frame
-            # if self.INIT_ITEM[item_num] == 0:
-            #     # No detected contour in prev frame
-            #     self.INIT_ITEM[item_num] = 1
-            #     self.new_pt[item_num, 0] = cX
-            #     self.new_pt[item_num, 1] = cY
-            #     self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
-            #     self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
-
-            # else:
-            #     self.prev_pt[item_num, 0] = self.new_pt[item_num, 0]
-            #     self.prev_pt[item_num, 1] = self.new_pt[item_num, 1]
-            #     self.new_pt[item_num, 0] = cX
-            #     self.new_pt[item_num, 1] = cY
-
             end = time.time()
             logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
-            
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
             cv2.putText(img, item, (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
 
         else:
             # No contours detected so set new pt to 0
             self.INIT_ITEM[item_num] = 0
             self.new_pt[item_num, 0] = 0
             self.new_pt[item_num, 1] = 0
-            #self.prev_pt[item_num, 0] = 0
-            #self.prev_pt[item_num, 1] = 0
-            #INIT_LEFT = 0
+
 
 
 
