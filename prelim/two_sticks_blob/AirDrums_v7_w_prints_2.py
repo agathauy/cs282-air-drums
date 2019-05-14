@@ -487,10 +487,12 @@ class AirDrums(object):
             #logger.debug("[CENTROID DETECTION]: Seconds elapsed: {}".format(end-start))
             
             # update through kalman filter
-            self.measurement[item_num] = np.array(self.new_pt[item_num],np.float32)
-            self.kalman.correct(self.measurement[item_num])
-            self.prediction[item_num] = self.kalman.predict().reshape(-1,2)[0]
-            #self.new_pt[item_num] = self.prediction[item_num]
+            
+            if item_num == 2:
+                self.measurement[item_num] = np.array(self.new_pt[item_num],np.float32)
+                self.kalman.correct(self.measurement[item_num])
+                self.prediction[item_num] = self.kalman.predict().reshape(-1,2)[0]
+                self.new_pt[item_num] = self.prediction[item_num]
 
 
             cv2.circle(img, (cX, cY), 5, self.blob_colors[item_num], -1)
@@ -787,5 +789,5 @@ if __name__ == '__main__':
     drums.init_drum_sounds()
     # 2 - for two sticks
     # 3 - for two sticks, and bass
-    drums.init_calibrate(2)
+    drums.init_calibrate(3)
     drums.playDrums()

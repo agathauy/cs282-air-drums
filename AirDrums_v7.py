@@ -127,8 +127,6 @@ class AirDrums(object):
         self.drum_color_2 = (255, 0, 0)
 
 
-        self.num_hits = 0
-
 
     def cb_calibrate(self, event, x, y, flags, params):
         '''
@@ -328,13 +326,8 @@ class AirDrums(object):
         # Start the blob detection
         otherFrame = 0
         img_counter = 0
-        TIME_ELAPSED = 0
-        PLAY_START = time.time()
         while True:
             ret_val, img = self.cam.read()
-
-            if TIME_ELAPSED >= 15:
-                PLAY_START = time.time()
 
             if otherFrame <= 0:
 
@@ -375,11 +368,6 @@ class AirDrums(object):
                 #img_counter = img_counter + 1
 
                 otherFrame = 0
-
-                PLAY_END = time.time()
-                TOTAL_ELAPSED = PLAY_END - PLAY_START
-                line = "time: {}, hits: {}".format(TOTAL_ELAPSED, self.num_hits)
-                logger.info(line)
             else:
                 otherFrame = otherFrame - 1
 
@@ -671,7 +659,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Crash")
                     cv2.rectangle(img, (self.coord_crash[0,0], self.coord_crash[0,1]), (self.coord_crash[1,0], self.coord_crash[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "CRASH", (self.coord_crash[2,0], self.coord_crash[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_crash.play()
 
@@ -681,7 +669,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Hi-hat")
                     cv2.rectangle(img, (self.coord_hihat[0,0], self.coord_hihat[0,1]), (self.coord_hihat[1,0], self.coord_hihat[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "HIHAT", (self.coord_hihat[2,0], self.coord_hihat[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_hihat.play()
             elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
@@ -693,7 +681,7 @@ class AirDrums(object):
 
                     cv2.rectangle(img, (self.coord_snare[0,0], self.coord_snare[0,1]), (self.coord_snare[1,0], self.coord_snare[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "SNARE", (self.coord_snare[2,0], self.coord_snare[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_snare.play()
 
@@ -705,7 +693,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Tom1")
                     cv2.rectangle(img, (self.coord_tom1[0,0], self.coord_tom1[0,1]), (self.coord_tom1[1,0], self.coord_tom1[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "TOM1", (self.coord_tom1[2,0], self.coord_tom1[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_tom1.play()
 
@@ -717,7 +705,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Ride")
                     cv2.rectangle(img, (self.coord_ride[0,0], self.coord_ride[0,1]), (self.coord_ride[1,0], self.coord_ride[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "RIDE", (self.coord_ride[2,0], self.coord_ride[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_ride.play()
 
@@ -727,7 +715,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Tom2")
                     cv2.rectangle(img, (self.coord_tom2[0,0], self.coord_tom2[0,1]), (self.coord_tom2[1,0], self.coord_tom2[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "TOM2", (self.coord_tom2[2,0], self.coord_tom2[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_tom2.play()
             elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
@@ -736,7 +724,7 @@ class AirDrums(object):
                     #logger.debug("[DETECT AREA]: Floor")
                     cv2.rectangle(img, (self.coord_floor[0,0], self.coord_floor[0,1]), (self.coord_floor[1,0], self.coord_floor[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "FLOOR", (self.coord_floor[2,0], self.coord_floor[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
-                    self.num_hits = self.num_hits + 1
+
                     if self.ifDrumSoundsOn:
                         self.drum_floor.play()
 
@@ -767,7 +755,6 @@ class AirDrums(object):
                     cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_2, 2)
                     cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
 
-                    self.num_hits = self.num_hits + 1
                     if self.ifDrumSoundsOn:
                         self.drum_bass.play()
         else:
