@@ -802,5 +802,5 @@ if __name__ == '__main__':
     drums.init_drum_sounds()
     # 2 - for two sticks
     # 3 - for two sticks, and bass
-    drums.init_calibrate(2)
+    drums.init_calibrate(3)
     drums.playDrums()
