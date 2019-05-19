@@ -364,7 +364,13 @@ class AirDrums(object):
                     self.detectTriggerThruArea(img, i)
 
                 # include bass drum
-                self.detectBassTrigger(img, self.NUM_ITEMS)
+                if (self.NUM_ITEMS == 2):
+                    for i in range(2):
+                        self.detectBassTrigger(img, self.NUM_ITEMS, i)
+                else:
+                    self.detectBassTrigger(img, self.NUM_ITEMS, 2)
+
+
 
                 end = time.time()
                 time_elapsed = end - start
@@ -741,15 +747,15 @@ class AirDrums(object):
                         self.drum_floor.play()
 
 
-    def detectBassTrigger(self, img, NUM_ITEMS):
+    def detectBassTrigger(self, img, NUM_ITEMS, item_num):
         '''
             Case for detecting if bass was triggered
         '''
 
         #logger.debug("[DETECT BASS TRIGGER]")
-        item_num = 2
 
         if (NUM_ITEMS == 3):
+            item_num = 2
 
 
             self.calculateDynamics(img, item_num)
@@ -771,6 +777,8 @@ class AirDrums(object):
                     if self.ifDrumSoundsOn:
                         self.drum_bass.play()
         else:
+
+
             if (self.new_pt[item_num, 0] == 0) and (self.new_pt[item_num, 1] == 0):
                 return
 
@@ -783,10 +791,14 @@ class AirDrums(object):
             else:
                 mod_prev_pt = self.prev_pt
 
+            #    elif (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
             if (self.new_pt[item_num, 0] <= self.grid_x2) and (self.new_pt[item_num,0] > self.grid_x1):
+
                 # 2nd Column
                 if (self.new_pt[item_num, 1] <= self.frame_height) and (self.new_pt[item_num, 1] >= self.grid_y3_5):
+
                     if ((mod_prev_pt[item_num, 1]<= self.grid_y3_5) and (mod_prev_pt[item_num, 1] >= self.grid_y2_5)):
+
                         #logger.debug("[DETECT AREA]: Bass")
                         cv2.rectangle(img, (self.coord_bass[0,0], self.coord_bass[0,1]), (self.coord_bass[1,0], self.coord_bass[1,1]), self.drum_color_2, 2)
                         cv2.putText(img, "BASS", (self.coord_bass[2,0], self.coord_bass[2,1]),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.drum_color_2, 2)
