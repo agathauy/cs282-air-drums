@@ -376,9 +376,10 @@ class AirDrums(object):
                 time_elapsed = end - start
                 #logger.debug("Seconds elapsed: {}".format(time_elapsed))
                 cv2.imshow("AirDrums", img)
-                #img_name = "frame_{}.jpg".format(img_counter)
+                img_name = "frame_{}.jpg".format(img_counter)
+                cv2.imwrite(img_name,img)
                 #cv2.imwrite("./AirDrums_v7_data/" + img_name, img)
-                #img_counter = img_counter + 1
+                img_counter = img_counter + 1
 
                 otherFrame = 0
 
